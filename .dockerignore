@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+.git
+.env
+.env.*
+!.env.example
+dist
+**/dist
+coverage
+.turbo
+playwright-report
+test-results
+*.log
