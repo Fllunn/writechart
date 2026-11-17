@@ -268,6 +268,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@writechart/backend@workspace:backend":
+  version: 0.0.0-use.local
+  resolution: "@writechart/backend@workspace:backend"
+  languageName: unknown
+  linkType: soft
+
+"@writechart/frontend@workspace:frontend":
+  version: 0.0.0-use.local
+  resolution: "@writechart/frontend@workspace:frontend"
+  languageName: unknown
+  linkType: soft
+
+"@writechart/shared@workspace:shared":
+  version: 0.0.0-use.local
+  resolution: "@writechart/shared@workspace:shared"
+  languageName: unknown
+  linkType: soft
+
 "ansi-regex@npm:^6.2.2":
   version: 6.6.0
   resolution: "ansi-regex@npm:6.6.0"
