@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # До setup-node: кэш Yarn должен вызвать Yarn 4 из packageManager, а не Yarn 1.
+      - run: corepack enable
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - run: yarn install --immutable
+
+      - run: yarn lint
+      - run: yarn format:check
+      - run: yarn deps
+      - run: yarn typecheck
+      - run: yarn test

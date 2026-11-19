@@ -2,16 +2,16 @@
 
 ## 1. Workflow
 
-- [ ] 1.1 Создать `.github/workflows/ci.yml` (design, решения 1–6): workflow `CI`, задача `check`, триггеры `pull_request` и `push` в `master`, `concurrency`, `permissions: contents: read`, шаги checkout → `corepack enable` → setup-node (`.nvmrc`, `cache: yarn`) → `yarn install --immutable` → `lint`, `format:check`, `deps`, `typecheck`, `test`; проверить: `yarn format:check` проходит (oxfmt проверяет YAML), команды в файле совпадают со скриптами корневого `package.json`
+- [x] 1.1 Создать `.github/workflows/ci.yml` (design, решения 1–6): workflow `CI`, задача `check`, триггеры `pull_request` и `push` в `master`, `concurrency`, `permissions: contents: read`, шаги checkout → `corepack enable` → setup-node (`.nvmrc`, `cache: yarn`) → `yarn install --immutable` → `lint`, `format:check`, `deps`, `typecheck`, `test`; проверить: `yarn format:check` проходит (oxfmt проверяет YAML), команды в файле совпадают со скриптами корневого `package.json`
 
 ## 2. Процесс
 
-- [ ] 2.1 Обновить шаг 5 «Как работаем» в `AGENTS.md`: архивация в той же ветке последним коммитом перед слиянием (design, решение 7); проверить: в `AGENTS.md` нет фразы «После слияния PR: `/opsx:archive`»
-- [ ] 2.2 Обновить `docs/architecture.md`: раздел «CI/CD» (что запускается сейчас, что позже), процесс OpenSpec (архив до слияния), структура репо (`.github/workflows/ci.yml`); проверить: раздел CI описывает тот же набор команд, что `ci.yml`
+- [x] 2.1 Обновить шаг 5 «Как работаем» в `AGENTS.md`: архивация в той же ветке последним коммитом перед слиянием (design, решение 7); проверить: в `AGENTS.md` нет фразы «После слияния PR: `/opsx:archive`»
+- [x] 2.2 Обновить `docs/architecture.md`: раздел «CI/CD» (что запускается сейчас, что позже), процесс OpenSpec (архив до слияния), структура репо (`.github/workflows/ci.yml`); проверить: раздел CI описывает тот же набор команд, что `ci.yml`
 
 ## 3. Проверка локально
 
-- [ ] 3.1 Прогнать `yarn lint`, `yarn format:check`, `yarn deps`, `yarn typecheck`, `yarn test` и `yarn openspec validate setup-ci`; проверить: всё без ошибок
+- [x] 3.1 Прогнать `yarn lint`, `yarn format:check`, `yarn deps`, `yarn typecheck`, `yarn test` и `yarn openspec validate setup-ci`; проверить: всё без ошибок
 
 ## 4. Проверка на GitHub (человек)
 
