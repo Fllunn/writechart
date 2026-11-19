@@ -53,7 +53,7 @@ writechart/
 │  └─ config.yaml
 ├─ docs/
 │  ├─ architecture.md        # этот файл
-│  ├─ agents-setup.md        # настройка агентов для участников (Context7)
+│  ├─ agents-setup.md        # настройка агентов для участников (Context7, скиллы)
 │  └─ adr/                   # архитектурные решения
 ├─ docker/postgres/          # init-скрипт тестовой базы
 ├─ .agents/skills/           # скиллы для Codex: OpenSpec и сторонние
