@@ -39,6 +39,14 @@ yarn deps                # knip: импорт пакетов, не объявл�
 
 Перед тем как сказать «готово», прогони `yarn lint`, `yarn typecheck`, `yarn test`, `yarn format:check`, `yarn deps`.
 
+## Документация библиотек и скиллы
+
+- **Context7** (MCP): перед кодом с API библиотеки сверь его с документацией из Context7. Обязательно для версий новее твоих знаний: TypeScript 7, React Router 8, Vitest 5 и всё, в чём не уверен.
+- **Скиллы проекта** лежат копиями в `.claude/skills/` (Claude Code) и `.agents/skills/` (Codex); источник и коммит каждого — в `skills-lock.json`. Новый скилл ставь в обе папки сразу: `npx skills@latest add <репозиторий> --skill=<имя> -a claude-code -a codex --copy`.
+- Когда правило скилла расходится с `AGENTS.md`, действует `AGENTS.md`.
+
+Для людей: настройка Context7 — [`docs/agents-setup.md`](docs/agents-setup.md). Глобальную копию скилла проекта держи той же версии: в Claude Code личный скилл главнее проектного ([ADR-0013](docs/adr/0013-agent-skills-and-mcp.md)).
+
 ## Как работаем: всё через OpenSpec
 
 1. Новая работа начинается с изменения в `openspec/changes/<имя>/`: `/opsx:propose` (Claude Code) или `$openspec-propose` (Codex).
