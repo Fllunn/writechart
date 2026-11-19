@@ -14,5 +14,6 @@
 | [0008](0008-frontend-libraries.md) | React Router, TanStack Query, Zustand, shadcn/ui | принято («пока») |
 | [0009](0009-testing.md) | Тесты, линтер, форматтер | принято; линтер и форматтер заменены ADR-0012 |
 | [0010](0010-git-process.md) | GitHub Flow, merge commit, Conventional Commits | принято |
-| [0011](0011-ai-development.md) | AGENTS.md и OpenSpec | принято |
+| [0011](0011-ai-development.md) | AGENTS.md и OpenSpec | принято; скиллы и MCP дополнены ADR-0013 |
 | [0012](0012-ts7-oxc-tooling.md) | TypeScript 7, Oxlint, oxfmt и knip вместо ESLint и Prettier | принято |
+| [0013](0013-agent-skills-and-mcp.md) | Сторонние скиллы агентов и Context7 | принято |

@@ -39,6 +39,15 @@ yarn deps                # knip: импорт пакетов, не объявл�
 
 Перед тем как сказать «готово», прогони `yarn lint`, `yarn typecheck`, `yarn test`, `yarn format:check`, `yarn deps`.
 
+## Документация библиотек и скиллы
+
+- **Context7** (MCP): сверяй API библиотеки с Context7 — перед кодом с её API, при непонятной ошибке или несходящемся типе из библиотеки, при смене версии зависимости. Обязательно для версий новее твоих знаний: TypeScript 7, React Router 8, Vitest 5.
+- **Скиллы проекта** лежат копиями в `.claude/skills/` (Claude Code) и `.agents/skills/` (Codex); источник и коммит каждого — в `skills-lock.json`. Новый скилл ставь в обе папки сразу: `npx skills@latest add <репозиторий> --skill=<имя> -a claude-code -a codex --copy`.
+- Когда правило скилла расходится с `AGENTS.md`, действует `AGENTS.md`.
+- Спека для `code-review` — изменение OpenSpec: `openspec/changes/<имя>/` (proposal, design, tasks).
+
+Для людей: настройка агентов (Context7, скиллы) — [`docs/agents-setup.md`](docs/agents-setup.md). Глобальную копию скилла проекта держи той же версии: в Claude Code личный скилл главнее проектного ([ADR-0013](docs/adr/0013-agent-skills-and-mcp.md)).
+
 ## Как работаем: всё через OpenSpec
 
 1. Новая работа начинается с изменения в `openspec/changes/<имя>/`: `/opsx:propose` (Claude Code) или `$openspec-propose` (Codex).
@@ -59,6 +68,7 @@ yarn deps                # knip: импорт пакетов, не объявл�
 
 - **Нельзя:** `git commit`, `git push`, `gh pr create`, merge, создание и удаление веток на GitHub, изменение истории (`rebase`, `reset --hard`, `push --force`).
 - **Можно:** `git status`, `git diff`, `git log`, `git show`.
+- **С согласия человека:** `git bisect` (его предлагает `diagnosing-bugs`): он переключает рабочую папку между коммитами.
 - Когда работа готова, **предложи** название коммита и текст PR. Коммитит и открывает PR человек.
 
 ### Процесс
