@@ -56,7 +56,7 @@ writechart/
 ├─ docker/postgres/          # init-скрипт тестовой базы
 ├─ .agents/skills/           # скиллы OpenSpec для Codex
 ├─ .claude/                  # скиллы и команды OpenSpec для Claude Code
-├─ .github/                  # шаблон PR (позже — CI)
+├─ .github/                  # шаблон PR, workflows/ci.yml (CI)
 ├─ AGENTS.md                 # главные инструкции для агентов
 ├─ CLAUDE.md                 # ссылка на AGENTS.md
 ├─ docker-compose.yml        # PostgreSQL: writechart + writechart_test
@@ -72,9 +72,9 @@ writechart/
 
 ## 4. Процесс разработки
 
-- **Git:** GitHub Flow. Ветка от `master`, PR в `master`. Прямой пуш в `master` запрещён, одобрения не требуются, слияние только при зелёном CI, режим — merge commit.
+- **Git:** GitHub Flow. Ветка от `master`, PR в `master`. Прямой пуш в `master` запрещён, одобрения не требуются, слияние только при зелёном CI и актуальной ветке («Update branch», если `master` ушёл вперёд), режим — merge commit.
 - **Коммиты:** Conventional Commits со scope (`fix(security): ...`). Автопроверки пока нет.
-- **OpenSpec:** каждая работа начинается с изменения в `openspec/changes/`. Человек утверждает proposal, агент выполняет `tasks.md`, после слияния изменение архивируется.
+- **OpenSpec:** каждая работа начинается с изменения в `openspec/changes/`. Человек утверждает proposal, агент выполняет `tasks.md`; перед слиянием изменение архивируется в той же ветке, последним коммитом.
 - **ИИ-агенты:** Claude Code и Codex. Commit, push и PR делает только человек; агент предлагает текст.
 
 ## 5. Тесты
@@ -91,7 +91,14 @@ writechart/
 
 ## 6. CI/CD
 
-Планируется (отдельное изменение OpenSpec): GitHub Actions на каждый PR — установка через Corepack, `yarn lint`, `yarn format:check`, `yarn deps` и `turbo run typecheck test`; позже — сервис PostgreSQL (с первым тестом базы), `build` и Playwright (с каркасами). Деплой — на свой сервер, детали отложены.
+GitHub Actions, `.github/workflows/ci.yml`: workflow `CI`, одна задача `check` на `ubuntu-latest`.
+
+- **Когда:** каждый PR в `master` и каждый push в `master` (то есть после слияния). Запуски на `master` наполняют кэш Yarn, которым пользуются все PR.
+- **Шаги:** `corepack enable` → Node из `.nvmrc` с кэшем Yarn → `yarn install --immutable` → `yarn lint`, `yarn format:check`, `yarn deps`, `yarn typecheck`, `yarn test`.
+- **Защита `master`** (настройки GitHub): обязательная проверка `check`, ветка должна быть актуальной перед слиянием.
+- **Позже:** сервис PostgreSQL (с первым тестом базы), `build` и Playwright (с каркасами).
+
+Деплой — на свой сервер, детали отложены.
 
 ## 7. Отложено
 
