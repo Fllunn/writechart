@@ -8,7 +8,7 @@ Writechart — веб-сервис, который строит блок-схе�
 
 ## Стек
 
-Монорепо: Yarn 4 workspaces, Node 24 (`.nvmrc`).
+Монорепо: Yarn 4 workspaces + Turborepo, Node 24 (`.nvmrc`), TypeScript 7.
 
 | Пакет | Что внутри |
 |---|---|
@@ -18,7 +18,9 @@ Writechart — веб-сервис, который строит блок-схе�
 
 Перед работой в папке прочитай её `AGENTS.md`. Архитектура и причины решений: `docs/architecture.md`, `docs/adr/`.
 
-Решено, но пока не установлено: Turborepo, ESLint + Prettier, Vitest, React Testing Library, Supertest, Playwright. Не выбрано: ORM, деплой, окружения. Не добавляй эти инструменты без изменения в OpenSpec.
+Инструменты: Oxlint (линтер, проверки по типам через TS 7), oxfmt (форматтер), knip (необъявленные зависимости), Vitest (тесты). ESLint и Prettier не используем: typescript-eslint не работает с TS 7 ([ADR-0012](docs/adr/0012-ts7-oxc-tooling.md)).
+
+Решено, но пока не установлено: React Testing Library, Supertest, Playwright. Не выбрано: ORM, деплой, окружения. Не добавляй эти инструменты без изменения в OpenSpec. Новый инструмент проверь: если он зависит от пакета `typescript` (API TypeScript), с TS 7 он может не работать.
 
 ## Команды
 
@@ -27,7 +29,15 @@ corepack enable          # один раз: включает Yarn 4.18.1 из pa
 yarn install
 docker compose up -d     # PostgreSQL; перед этим скопируй .env.example в .env
 yarn openspec list       # активные изменения OpenSpec
+
+yarn lint                # Oxlint с проверками по типам
+yarn typecheck           # tsc --noEmit во всех пакетах (turbo)
+yarn test                # Vitest во всех пакетах (turbo)
+yarn format              # oxfmt: отформатировать; yarn format:check — только проверить
+yarn deps                # knip: импорт пакетов, не объявленных в package.json пакета
 ```
+
+Перед тем как сказать «готово», прогони `yarn lint`, `yarn typecheck`, `yarn test`, `yarn format:check`, `yarn deps`.
 
 ## Как работаем: всё через OpenSpec
 

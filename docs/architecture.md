@@ -31,7 +31,9 @@ shared/ — Zod-схемы, типы и константы; их импорти�
 | Node | 24 LTS | официально поддерживается всеми инструментами стека, Corepack в комплекте | [0006](adr/0006-node-24.md) |
 | Контракт API | Zod в `shared/` | одна схема для фронта, бэка и типов | [0007](adr/0007-shared-zod.md) |
 | Библиотеки фронта | React Router, TanStack Query, Zustand, shadcn/ui | разделение серверных и интерфейсных данных | [0008](adr/0008-frontend-libraries.md) |
-| Тесты | Vitest, React Testing Library, Supertest, Playwright; ESLint + Prettier | пирамида тестов, настоящая база в тестах | [0009](adr/0009-testing.md) |
+| TypeScript | 7 (компилятор на Go) | в 8–12 раз быстрее на полной сборке по данным Microsoft; без второй версии TS | [0012](adr/0012-ts7-oxc-tooling.md) |
+| Тесты | Vitest, React Testing Library, Supertest, Playwright | пирамида тестов, настоящая база в тестах | [0009](adr/0009-testing.md) |
+| Линтер и форматтер | Oxlint (+ oxlint-tsgolint), oxfmt, knip | работают с TS 7; typescript-eslint его не поддерживает | [0012](adr/0012-ts7-oxc-tooling.md) |
 | Git | GitHub Flow, merge commit, Conventional Commits | простой процесс для 4 человек, вклад каждого виден | [0010](adr/0010-git-process.md) |
 | Разработка с ИИ | AGENTS.md в каждом пакете + OpenSpec | агенты работают по спекам и правилам | [0011](adr/0011-ai-development.md) |
 
@@ -58,7 +60,11 @@ writechart/
 ├─ AGENTS.md                 # главные инструкции для агентов
 ├─ CLAUDE.md                 # ссылка на AGENTS.md
 ├─ docker-compose.yml        # PostgreSQL: writechart + writechart_test
-├─ package.json              # workspaces, packageManager, engines
+├─ package.json              # workspaces, packageManager, engines, скрипты lint/typecheck/test/format/deps
+├─ turbo.json                # задачи Turborepo: typecheck, test
+├─ tsconfig.base.json        # общие настройки TypeScript, пакеты наследуют через extends
+├─ .oxlintrc.json            # Oxlint
+├─ .oxfmtrc.json             # oxfmt
 ├─ .yarnrc.yml               # nodeLinker: node-modules
 ├─ .nvmrc                    # 24
 └─ .gitignore, .gitattributes, .editorconfig, .env.example, .dockerignore
@@ -85,7 +91,7 @@ writechart/
 
 ## 6. CI/CD
 
-Планируется (отдельное изменение OpenSpec): GitHub Actions на каждый PR — установка через Corepack, `turbo run lint typecheck test build` с сервисом PostgreSQL, Playwright. Деплой — на свой сервер, детали отложены.
+Планируется (отдельное изменение OpenSpec): GitHub Actions на каждый PR — установка через Corepack, `yarn lint`, `yarn format:check`, `yarn deps` и `turbo run typecheck test`; позже — сервис PostgreSQL (с первым тестом базы), `build` и Playwright (с каркасами). Деплой — на свой сервер, детали отложены.
 
 ## 7. Отложено
 

@@ -31,7 +31,7 @@
 
 ## Impact
 
-- Новые файлы в корне: `turbo.json`, `tsconfig.base.json`, `.oxlintrc.json`, `.oxfmtrc.json`, файл игнора oxfmt; в `shared/`: `tsconfig.json`, тест; в `docs/adr/`: `0012-…md`.
+- Новые файлы в корне: `turbo.json`, `tsconfig.base.json`, `.oxlintrc.json`, `.oxfmtrc.json`; в `shared/`: `tsconfig.json`, тест; в `docs/adr/`: `0012-…md`.
 - Новые devDependencies в корневом `package.json` и в `shared/package.json`, обновится `yarn.lock`.
 - `yarn lint`, `yarn typecheck`, `yarn test`, `yarn format:check`, `yarn deps` проходят на чистом репозитории.
 - ADR-0009 в части линтера и форматтера заменяется ADR-0012; Vitest, RTL, Supertest, Playwright остаются.

@@ -15,7 +15,7 @@ ADR-0009 выбрал ESLint + Prettier. Команда выбрала TypeScrip
 | oxlint | 1.94.0 | 1.0.0 вышла 10.06.2025 |
 | oxlint-tsgolint | 7.0.2007 | проверки по типам через TS 7 |
 | oxfmt | 0.79.0 | первая версия 10.09.2025, до 1.0 |
-| knip | 6.46.1 | не зависит от пакета `typescript` |
+| knip | 6.46.1 | не зависит от пакета `typescript`; установлена 6.46.0: 6.46.1 младше суток, Yarn держит её на карантине (`npmMinimalAgeGate` = 1440 мин) |
 | vitest | 5.1.1 | engines: `node ^22.12.0 \|\| ^24.0.0 \|\| >=26.0.0` |
 
 Проверено на тестовом проекте (TS 7.0.2, oxlint 1.94.0, oxlint-tsgolint 7.0.2007, knip 6.46.1, oxfmt 0.79.0): `tsc` проходит; `oxlint --type-aware` ловит забытый `await` (`typescript(no-floating-promises)`); `knip --strict` ловит импорт необъявленного пакета; `oxfmt --check` работает.
@@ -39,7 +39,7 @@ ADR-0009 выбрал ESLint + Prettier. Команда выбрала TypeScrip
 2. **TypeScript 7.0.x** (`typescript@~7.0.2`) только в `shared/` (и позже в каждом пакете со своим `typecheck`). В корне пакет `typescript` не нужен: Oxlint и knip его не используют.
 3. **`tsconfig.base.json`** в корне: `strict`, `noEmit`, `isolatedModules`, `verbatimModuleSyntax`, `skipLibCheck`, `module: preserve`, `moduleResolution: bundler`, `target: ES2024`. Без опций, которые TS 7 удалил (`baseUrl`, `moduleResolution: node`, `target: es5` и др.). Пакеты наследуют базу через `extends`.
 4. **Oxlint из корня, не через turbo.** Один запуск `oxlint --type-aware --deny-warnings` на весь репозиторий: Oxlint сам находит ближайший `tsconfig.json` для каждого файла и работает быстрее одного процесса на пакет. Конфиг `.oxlintrc.json`: плагины `typescript`, `import`; категория `correctness` — ошибки; правила по типам из `oxlint-tsgolint` включены.
-5. **oxfmt вместо Prettier**, из корня: `oxfmt` (запись) и `oxfmt --check`. Конфиг `.oxfmtrc.json` с настройками по умолчанию. oxfmt читает `.gitignore` и `.prettierignore`; отдельный файл игнора с `yarn.lock`, `.yarn/`, `openspec/`, `.claude/`, `.agents/`.
+5. **oxfmt вместо Prettier**, из корня: `oxfmt` (запись) и `oxfmt --check`. Конфиг `.oxfmtrc.json` с настройками по умолчанию; oxfmt сам читает `.gitignore`, а лишнее исключено полем `ignorePatterns` в том же конфиге (`yarn.lock`, `.yarn/`, `openspec/`, `.claude/`, `.agents/`, `**/*.md`) — отдельный файл игнора не нужен. oxfmt сортирует ключи в `package.json`.
 6. **knip для необъявленных зависимостей** (замена строгости PnP из ADR-0005, вместо `import/no-extraneous-dependencies`). Скрипт `yarn deps` = `knip --strict --include unlisted,unresolved`: только ошибки импорта, без отчёта о неиспользуемом коде. Проверено на тестовом проекте (knip 6.46.1):
    - без `--strict` knip засчитывает пакету зависимости корня и импорт пакета, объявленного только в корне, не ловит;
    - с `--strict` ловит и импорт пакета из корня, и импорт пакета из devDependencies в рабочем коде;
@@ -47,7 +47,7 @@ ADR-0009 выбрал ESLint + Prettier. Команда выбрала TypeScrip
    Опции `isolateWorkspaces` в knip 6 нет (`Invalid input (unrecognized_keys: isolateWorkspaces)`), отдельный `knip.json` пока не нужен.
 7. **Где ставить зависимости** (правило AGENTS.md: в пакете, где используется). Yarn 4 в скрипте пакета видит только бинарники зависимостей этого пакета, поэтому:
    - корень: `turbo`, `oxlint`, `oxlint-tsgolint`, `oxfmt`, `knip`;
-   - `shared/`: `typescript`, `vitest`.
+   - `shared/`: `typescript`, `vitest`, `vite` (Vitest 5.1.1 требует `vite` как обязательную peer-зависимость `^6.4.0 || ^7.0.0 || ^8.0.0` и сам его не ставит; добавлено при реализации с согласия человека).
 8. **Vitest в `shared/`** без отдельного конфига. Один тест-проверка `shared/src/toolchain.test.ts`: без него `tsc` падает с TS18003 (нет входных файлов), а `vitest run` — «No test files found».
 9. **ADR-0012** по формату проекта (Контекст → Решение → Варианты → Последствия): TS 7 + Oxlint + oxfmt + knip; в «Вариантах» — ESLint с TS 6, связка TS 6 + 7, Biome, Prettier. ADR-0009 не переписывается (правило `docs/adr/README.md`), в README его статус: «частично заменён ADR-0012».
 
