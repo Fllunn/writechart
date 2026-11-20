@@ -155,7 +155,8 @@ API сверены через Context7:
 
 15. **Скрипты и Turborepo.**
     - `backend/package.json`: `dev` (решение 2), `build` (`vite build`), `start` (решение 2), `typecheck` (`tsc --noEmit`), `test` (`vitest run`).
-    - `turbo.json` не меняется: задачи `build` (`outputs: dist/**`), `dev`, `typecheck`, `test` уже есть. Корневой `yarn dev` запустит фронт и бэк вместе.
+    - `turbo.json`: задачи `build` (`outputs: dist/**`), `dev`, `typecheck`, `test` уже есть. Корневой `yarn dev` запустит фронт и бэк вместе.
+    - Исправлено после первого CI (решение человека 20.11.2026): у задачи `test` добавлено `env: ["DATABASE_URL_TEST"]`. Turborepo 2 запускает задачи в строгом режиме env и передаёт только перечисленные переменные, поэтому `DATABASE_URL_TEST` из `env` задачи CI до Vitest не доходила. Локально это не видно: там переменная читается из `.env`. `env`, а не `passThroughEnv`: смена адреса базы сбрасывает кэш теста.
 
 16. **Oxlint.** В `.oxlintrc.json` override для `backend/**` с `env.node: true`. Проверки по типам подхватят `backend/tsconfig.json`.
 
