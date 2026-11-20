@@ -17,3 +17,5 @@
 | [0011](0011-ai-development.md) | AGENTS.md и OpenSpec | принято; скиллы и MCP дополнены ADR-0013 |
 | [0012](0012-ts7-oxc-tooling.md) | TypeScript 7, Oxlint, oxfmt и knip вместо ESLint и Prettier | принято |
 | [0013](0013-agent-skills-and-mcp.md) | Сторонние скиллы агентов и Context7 | принято |
+| [0014](0014-backend-build-and-runtime.md) | Запуск и сборка бэка: Node без сборки в dev, Vite на прод | принято |
+| [0015](0015-logging-pino.md) | Логи бэка: pino и pino-http | принято |

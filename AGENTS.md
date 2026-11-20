@@ -18,9 +18,9 @@ Writechart — веб-сервис, который строит блок-схе�
 
 Перед работой в папке прочитай её `AGENTS.md`. Архитектура и причины решений: `docs/architecture.md`, `docs/adr/`.
 
-Инструменты: Oxlint (линтер, проверки по типам через TS 7), oxfmt (форматтер), knip (необъявленные зависимости), Vitest (тесты; во фронте — с React Testing Library на jsdom). ESLint и Prettier не используем: typescript-eslint не работает с TS 7 ([ADR-0012](docs/adr/0012-ts7-oxc-tooling.md)).
+Инструменты: Oxlint (линтер, проверки по типам через TS 7), oxfmt (форматтер), knip (необъявленные зависимости), Vitest (тесты; во фронте — с React Testing Library на jsdom, в бэке — с Supertest на настоящей базе `writechart_test`). ESLint и Prettier не используем: typescript-eslint не работает с TS 7 ([ADR-0012](docs/adr/0012-ts7-oxc-tooling.md)).
 
-Решено, но пока не установлено: Supertest, Playwright. Не выбрано: ORM, деплой, окружения. Не добавляй эти инструменты без изменения в OpenSpec. Новый инструмент проверь: если он зависит от пакета `typescript` (API TypeScript), с TS 7 он может не работать.
+Решено, но пока не установлено: Playwright. Не выбрано: ORM, деплой, окружения. Не добавляй эти инструменты без изменения в OpenSpec. Новый инструмент проверь: если он зависит от пакета `typescript` (API TypeScript), с TS 7 он может не работать.
 
 ## Команды
 
@@ -34,7 +34,7 @@ yarn dev                 # dev-серверы пакетов (turbo); фронт
 yarn build               # сборка пакетов (turbo); фронт — в frontend/dist
 yarn lint                # Oxlint с проверками по типам
 yarn typecheck           # проверка типов tsc во всех пакетах (turbo); во фронте tsc -b
-yarn test                # Vitest во всех пакетах (turbo)
+yarn test                # Vitest во всех пакетах (turbo); тестам бэка нужен docker compose up -d
 yarn format              # oxfmt: отформатировать; yarn format:check — только проверить
 yarn deps                # knip: импорт пакетов, не объявленных в package.json пакета
 ```

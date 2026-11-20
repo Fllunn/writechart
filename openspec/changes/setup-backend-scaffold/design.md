@@ -95,6 +95,7 @@ API сверены через Context7:
    | `DATABASE_URL` | URL `postgres://` или `postgresql://` | обязательна |
    | `LOG_LEVEL` | уровень pino (`fatal`…`trace`, `silent`) | `info` |
 
+   - Пустая строка = переменная не задана (решение человека при реализации 20.11.2026). Node флагом `--env-file` превращает `PORT=` в `""`, а `z.coerce.number()` — в `0`, так что копия `.env.example` без значений ломала бы старт. `parseEnv` заменяет `""` на `undefined` до проверки, и срабатывают значения по умолчанию. Так делает t3-env (`emptyStringAsUndefined`).
    - В корневой `.env.example` без значений добавляются `HOST`, `PORT`, `LOG_LEVEL`, `API_PROXY_TARGET` (решение 12). `DATABASE_URL` и `DATABASE_URL_TEST` там уже есть. `NODE_ENV` задают скрипты, в `.env` он не нужен.
 
 5. **PostgreSQL: `pg` без ORM** (решение человека). `lib/db.ts`: `createPool(url)` → `new Pool({ connectionString, connectionTimeoutMillis: 5000 })`. Таймаут нужен, чтобы `/api/health/ready` при недоступной базе отвечал 503 за секунды, а не ждал бесконечно. Drizzle и Prisma 7 (через `@prisma/adapter-pg`) работают поверх `pg`, так что выбор ORM этот код не ломает.
@@ -108,7 +109,7 @@ API сверены через Context7:
    - Отложено (решение человека, параметры зависят от решений, которых ещё нет): `trust proxy` и `compression` — к деплою; `express-rate-limit` — к деплою и входу (считает по IP, без правильного `trust proxy` работает неверно); `cookie-parser` — ко входу. CORS не нужен (решение 12).
 
 8. **Ошибки** (решение человека; nodebestpractices: свой класс ошибки, один центральный обработчик, при сбое процесса — выход).
-   - `shared/src/api-error.ts`: `ApiError` — Zod-схема `{ error: { code, message, details? } }` и тип из неё. Схема в `shared`, потому что ответ идёт к фронту.
+   - `shared/src/api-error.ts`: `ApiError` — Zod-схема `{ error: { code, message, details? } }` и тип из неё. Схема в `shared`, потому что ответ идёт к фронту. Там же `ValidationDetails` — форма `details` для `validation_failed` (`[{ path, message }]`); добавлена после ревью 20.11.2026 с согласия человека, чтобы фронт разбирал и её.
    - `lib/errors.ts`: `AppError extends Error` с полями `status` и `code` — для ожидаемых ошибок в коде.
    - `lib/http/not-found.ts`: всё, что дошло под `/api` и не нашло маршрута, → 404 `not_found`.
    - `lib/http/error-handler.ts` переводит ошибку в ответ:
@@ -128,6 +129,7 @@ API сверены через Context7:
 
 10. **Health-check** (решение человека; так делают GitLab `/-/liveness`, n8n `/healthz` + `/healthz/readiness`, Directus `/server/ping`; документация Kubernetes: liveness решает о перезапуске, проверка зависимостей — в readiness). Поведение — в `specs/api-health`.
     - `shared/src/health.ts`: схемы `HealthResponse` и `ReadyResponse`.
+    - 503 от `/api/health/ready` отдаёт тело `ReadyResponse`, а не `ApiError`: это ответ проверки состояния, его формат задаёт `specs/api-health`. Для этого адреса `specs/api-health` главнее общего правила `specs/api-errors` (решение человека после ревью 20.11.2026; исключение записано в `backend/AGENTS.md`).
     - `modules/health/health.router.ts`: `GET /health` и `GET /health/ready` (`pool.query('SELECT 1')`), подключён в `/api`. Ошибка базы пишется в `req.log.warn`, в ответ не попадает.
 
 11. **Мягкая остановка своим кодом** (решение человека; библиотеки http-terminator, close-with-grace, @godaddy/terminus не нужны: Node 24 сам закрывает простаивающие keep-alive соединения в `server.close()`). В `server.ts`: на `SIGTERM`/`SIGINT` → `server.close()` → `pool.end()` → лог → `process.exit(0)`. Таймер 10 с (`unref`): если не успели — лог и `process.exit(1)`. Повторный сигнал во время остановки игнорируется.
@@ -180,6 +182,7 @@ API сверены через Context7:
 - [Type stripping в Node — свежая фича, крупные проекты на нём прод не гоняют] → у нас он только в dev; прод работает на бандле Vite. Если в dev что-то не заработает — можно перейти на `tsx` без правки кода.
 - [`vite build` вшивает пакет, который так не работает (динамический `require`, файлы рядом с модулем)] → замер на Express + pg + pino прошёл. Задача 4.2 запускает собранный `dist/server.js` из пустой папки и проверяет `/api/health/ready`. Если пакет ломается в бандле — выносим его в `ssr.external` и записываем сюда.
 - [pino-pretty в бандле] → не попадает: транспорт включается только при `NODE_ENV=development`, а бандл запускается с `production`.
+- [Ctrl+C в `yarn dev` на Windows] → мягкой остановки нет: на Windows сигналы эмулируются, и родитель `node --watch` завершает дочерний процесс принудительно (документация Node 24, `subprocess.kill`). Без `--watch` тот же `server.ts` пишет остановку и выходит с кодом 0 (проверено в задаче 2.4). Касается только dev на Windows; на Linux (CI, прод) сигнал доходит, а прод запускается без `--watch`. Решение человека при реализации 20.11.2026: принять.
 - [`NODE_ENV=...` в скрипте `start` на Windows] → переносимая оболочка Yarn понимает такую запись; задача 4.2 проверит. Если нет — задаём `NODE_ENV` в `vite.config.ts` через `define`.
 - [`localhost` в `DATABASE_URL` из `.env.example` у человека уходит на `::1`] → задача 2.3 проверяет подключение к Docker-базе. Если не работает — в `.env.example` меняем `localhost` на `127.0.0.1`.
 - [knip и строковый транспорт `pino-pretty`, `globalSetup` в конфиге Vitest] → knip может не увидеть их. Задача 7.1 запускает `yarn deps`; если knip ошибается, правим его конфиг, проверку не отключаем.
