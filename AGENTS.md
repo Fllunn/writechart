@@ -15,12 +15,13 @@ Writechart — веб-сервис, который строит блок-схе�
 | `frontend/` | React + Vite SPA, React Router, TanStack Query, Zustand, shadcn/ui |
 | `backend/` | Node.js + TypeScript + Express 5, PostgreSQL |
 | `shared/` | Zod-схемы, типы, константы для фронта и бэка |
+| `e2e/` | E2E-тесты Playwright: собранный фронт + бэк + база в Chromium |
 
 Перед работой в папке прочитай её `AGENTS.md`. Архитектура и причины решений: `docs/architecture.md`, `docs/adr/`.
 
-Инструменты: Oxlint (линтер, проверки по типам через TS 7), oxfmt (форматтер), knip (необъявленные зависимости), Vitest (тесты; во фронте — с React Testing Library на jsdom, в бэке — с Supertest на настоящей базе `writechart_test`). ESLint и Prettier не используем: typescript-eslint не работает с TS 7 ([ADR-0012](docs/adr/0012-ts7-oxc-tooling.md)).
+Инструменты: Oxlint (линтер, проверки по типам через TS 7), oxfmt (форматтер), knip (необъявленные зависимости), Vitest (тесты; во фронте — с React Testing Library на jsdom, в бэке — с Supertest на настоящей базе `writechart_test`), Playwright (E2E в `e2e/`, только Chromium). ESLint и Prettier не используем: typescript-eslint не работает с TS 7 ([ADR-0012](docs/adr/0012-ts7-oxc-tooling.md)).
 
-Решено, но пока не установлено: Playwright. Не выбрано: ORM, деплой, окружения. Не добавляй эти инструменты без изменения в OpenSpec. Новый инструмент проверь: если он зависит от пакета `typescript` (API TypeScript), с TS 7 он может не работать.
+Не выбрано: ORM, деплой, окружения. Не добавляй эти инструменты без изменения в OpenSpec. Новый инструмент проверь: если он зависит от пакета `typescript` (API TypeScript), с TS 7 он может не работать.
 
 ## Команды
 
@@ -35,11 +36,19 @@ yarn build               # сборка пакетов (turbo); фронт — �
 yarn lint                # Oxlint с проверками по типам
 yarn typecheck           # проверка типов tsc во всех пакетах (turbo); во фронте tsc -b
 yarn test                # Vitest во всех пакетах (turbo); тестам бэка нужен docker compose up -d
+yarn e2e                 # Playwright (turbo): соберёт фронт и бэк, нужен docker compose up -d
+yarn workspace @writechart/e2e playwright install chromium --only-shell  # один раз: браузер для yarn e2e
 yarn format              # oxfmt: отформатировать; yarn format:check — только проверить
 yarn deps                # knip: импорт пакетов, не объявленных в package.json пакета
 ```
 
-Перед тем как сказать «готово», прогони `yarn lint`, `yarn typecheck`, `yarn test`, `yarn format:check`, `yarn deps`, `yarn build`.
+Перед тем как сказать «готово», прогони `yarn lint`, `yarn typecheck`, `yarn test`, `yarn format:check`, `yarn deps`, `yarn build`, `yarn e2e`.
+
+## Секреты
+
+- `.env` и другие файлы с секретами — только человека. Агент оставляет их на месте как есть: не переносит, не переименовывает, не копирует и не правит, даже на минуту.
+- Проверку «без `.env`» или с другими значениями делай переменными окружения процесса (`DATABASE_URL_TEST=... yarn e2e`), а не правкой файла.
+- Нужна база, а пароль только в `.env` — подними временный ресурс с тестовыми значениями (например, контейнер Postgres на свободном порту) или попроси человека прогнать проверку.
 
 ## Документация библиотек и скиллы
 

@@ -50,6 +50,8 @@ writechart/
 │  └─ src/                   # app.ts, server.ts, config/, lib/, modules/<фича>/
 ├─ shared/                   # Zod-схемы, типы, константы (AGENTS.md внутри)
 │  └─ src/
+├─ e2e/                      # E2E на Playwright: собранный фронт + бэк + база в Chromium (AGENTS.md внутри)
+│  └─ tests/
 ├─ openspec/                 # спеки и изменения OpenSpec
 │  ├─ specs/                 # текущие спеки по доменам
 │  ├─ changes/               # изменения в работе
@@ -96,19 +98,19 @@ writechart/
 | База в тестах | PostgreSQL `writechart_test` в Docker | настоящие запросы и миграции |
 | E2E | Playwright | главные сценарии |
 
-Установлены: Vitest (`shared/`, `frontend/`, `backend/`), React Testing Library с jsdom (`frontend/`), Supertest и база `writechart_test` в тестах (`backend/`). Тесты бэка без базы падают с подсказкой: скопируй `.env.example` в `.env` и запусти `docker compose up -d`. Playwright появится позже.
+Установлены: Vitest (`shared/`, `frontend/`, `backend/`), React Testing Library с jsdom (`frontend/`), Supertest и база `writechart_test` в тестах (`backend/`). Тесты бэка без базы падают с подсказкой: скопируй `.env.example` в `.env` и запусти `docker compose up -d`. Установлен Playwright (`e2e/`, `yarn e2e`): turbo собирает фронт и бэк, Playwright поднимает `vite preview` (4173) и `dist/server.js` (3100) с базой `writechart_test` и гоняет тесты в Chromium.
 
 Минимальный процент покрытия пока не требуем.
 
 ## 6. CI/CD
 
-GitHub Actions, `.github/workflows/ci.yml`: workflow `CI`, одна задача `check` на `ubuntu-latest`.
+GitHub Actions, `.github/workflows/ci.yml`: workflow `CI`, две задачи на `ubuntu-latest`, идут параллельно: `check` и `e2e`.
 
 - **Когда:** каждый PR в `master` и каждый push в `master` (то есть после слияния). Запуски на `master` наполняют кэш Yarn, которым пользуются все PR.
-- **Шаги:** `corepack enable` → Node из `.nvmrc` с кэшем Yarn → `yarn install --immutable` → `yarn lint`, `yarn format:check`, `yarn deps`, `yarn typecheck`, `yarn test`, `yarn build`.
-- **База:** сервис `postgres:18` в задаче `check` (`POSTGRES_DB: writechart_test`, порт 5432) и `DATABASE_URL_TEST` на уровне задачи — для тестов бэка в `yarn test`.
-- **Защита `master`** (настройки GitHub): обязательная проверка `check`, ветка должна быть актуальной перед слиянием.
-- **Позже:** Playwright (отдельным изменением).
+- **Шаги `check`:** `corepack enable` → Node из `.nvmrc` с кэшем Yarn → `yarn install --immutable` → `yarn lint`, `yarn format:check`, `yarn deps`, `yarn typecheck`, `yarn test`, `yarn build`.
+- **Шаги `e2e`:** те же до `yarn install --immutable` → `playwright install --with-deps chromium --only-shell` → `yarn e2e`; при падении HTML-отчёт с trace — артефакт `playwright-report` на 14 дней.
+- **База:** сервис `postgres:18` в задачах `check` и `e2e` (`POSTGRES_DB: writechart_test`, порт 5432) и `DATABASE_URL_TEST` на уровне задачи — для тестов бэка в `yarn test` и для бэка в `yarn e2e`.
+- **Защита `master`** (настройки GitHub): обязательные проверки `check` и `e2e`, ветка должна быть актуальной перед слиянием.
 
 Деплой — на свой сервер, детали отложены.
 

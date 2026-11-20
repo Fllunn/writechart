@@ -24,6 +24,12 @@
       "env": {
         "node": true
       }
+    },
+    {
+      "files": ["e2e/**"],
+      "env": {
+        "node": true
+      }
     }
   ]
 }

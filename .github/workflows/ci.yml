@@ -57,3 +57,52 @@ jobs:
       - run: yarn typecheck
       - run: yarn test
       - run: yarn build
+
+  # E2E на Playwright: собранный фронт + бэк + база в Chromium. Идёт параллельно с check.
+  e2e:
+    runs-on: ubuntu-latest
+
+    # Та же база, что в check: E2E берёт writechart_test через DATABASE_URL_TEST.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: writechart
+          POSTGRES_PASSWORD: writechart
+          POSTGRES_DB: writechart_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U writechart -d writechart_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL_TEST: postgresql://writechart:writechart@localhost:5432/writechart_test
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # До setup-node: кэш Yarn должен вызвать Yarn 4 из packageManager, а не Yarn 1.
+      - run: corepack enable
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - run: yarn install --immutable
+
+      # Версию браузера команда берёт из установленного @playwright/test. Кэш не нужен:
+      # по документации Playwright он восстанавливается не быстрее скачивания.
+      - run: yarn workspace @writechart/e2e playwright install --with-deps chromium --only-shell
+
+      - run: yarn e2e
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
