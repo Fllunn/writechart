@@ -45,4 +45,4 @@ yarn dlx shadcn@4.23.0 info
 - Страницы лежат в `src/pages/`, по файлу на страницу (`src/pages/home-page.tsx`). Массив маршрутов в `src/routes.tsx` только импортирует их.
 - Имена файлов — kebab-case (`home-page.tsx`), как у компонентов shadcn (`components/ui/button.tsx`). Имена компонентов внутри — PascalCase (`HomePage`).
 - Остальная раскладка `src/` (где лежат тесты, папки сверх тех, что задаёт `components.json`) пока не решена: договоримся с первыми экранами.
-- Тесты: Vitest + React Testing Library на jsdom (`yarn workspace @writechart/frontend test`), для сложных форм и части обычных компонентов. Импорты из `vitest` явные (`globals` выключен), поэтому DOM после каждого теста чистит `afterEach(cleanup)` в `src/test-setup.ts`. Playwright для главных сценариев появится позже.
+- Тесты: Vitest + React Testing Library на jsdom (`yarn workspace @writechart/frontend test`), для сложных форм и части обычных компонентов. Импорты из `vitest` явные (`globals` выключен), поэтому DOM после каждого теста чистит `afterEach(cleanup)` в `src/test-setup.ts`. E2E главных сценариев на Playwright — в пакете [`e2e/`](../e2e/AGENTS.md).

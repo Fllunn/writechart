@@ -15,6 +15,12 @@
     "test": {
       "env": ["DATABASE_URL_TEST"],
       "outputs": []
+    },
+    "e2e": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL_TEST"],
+      "passThroughEnv": ["PLAYWRIGHT_*"],
+      "outputs": []
     }
   }
 }
