@@ -41,7 +41,7 @@
 
 ## 8. Проверка на GitHub (человек)
 
-- [ ] 8.1 Человек пушит ветку и открывает PR; проверить: `CI / check` зелёная, в логе стартовал сервис Postgres, `yarn test` прогнал тест `/api/health/ready` на базе, `yarn build` собрал `backend/dist/server.js`
+- [x] 8.1 Человек пушит ветку и открывает PR; проверить: `CI / check` зелёная, в логе стартовал сервис Postgres, `yarn test` прогнал тест `/api/health/ready` на базе, `yarn build` собрал `backend/dist/server.js`
 
 ## Workflow follow-up
 
