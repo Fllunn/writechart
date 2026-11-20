@@ -11,6 +11,8 @@
     "format:check": "oxfmt --check",
     "lint": "oxlint --type-aware --deny-warnings",
     "deps": "knip --strict --include unlisted,unresolved",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test"
   },
