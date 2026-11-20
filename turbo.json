@@ -13,6 +13,7 @@
       "outputs": []
     },
     "test": {
+      "env": ["DATABASE_URL_TEST"],
       "outputs": []
     }
   }

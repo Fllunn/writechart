@@ -16,6 +16,28 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+
+    # База для тестов бэка (как в docker-compose.yml). Сервис стартует до checkout,
+    # поэтому init-test-db.sql не подключить: POSTGRES_DB сразу создаёт тестовую базу.
+    # Пароль не секрет: база живёт внутри раннера и снаружи недоступна.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: writechart
+          POSTGRES_PASSWORD: writechart
+          POSTGRES_DB: writechart_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U writechart -d writechart_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL_TEST: postgresql://writechart:writechart@localhost:5432/writechart_test
+
     steps:
       - uses: actions/checkout@v7
 

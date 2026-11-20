@@ -25,7 +25,10 @@ shared/ — Zod-схемы, типы и константы; их импорти�
 | Репозиторий | монорепо `frontend/` + `backend/` + `shared/` | одна правка API и UI в одном PR, общие типы без публикации пакетов | [0001](adr/0001-monorepo.md) |
 | Фронт | React + Vite, SPA | SSR не нужен: редактор работает в браузере; бэкенд виден как отдельная часть | [0002](adr/0002-frontend-spa.md) |
 | Бэк | Express 5 + TypeScript | фреймворк из курса Node.js, мало потребляет ресурсов | [0003](adr/0003-backend-express.md) |
+| Запуск и сборка бэка | dev — `node --watch` (Node 24 стирает типы), прод — `vite build` в один `dist/server.js` | без шага сборки в dev; на проде не нужен `node_modules` | [0014](adr/0014-backend-build-and-runtime.md) |
+| Логи | pino + pino-http, pino-pretty только в dev | JSON в stdout, id у каждого запроса | [0015](adr/0015-logging-pino.md) |
 | БД | PostgreSQL | реляционные данные: пользователи, схемы, история, шаблоны | [0004](adr/0004-database-postgresql.md) |
+| Драйвер БД | `pg` (`Pool`), без ORM | Drizzle и Prisma 7 работают поверх `pg`, выбор ORM код не ломает | — |
 | ORM | не выбрана (Drizzle или Prisma 7) | решение отложено | — |
 | Пакеты и задачи | Yarn 4.18.1 (`node-modules`) + Turborepo | совместимость со всеми инструментами; кэш и порядок задач | [0005](adr/0005-yarn-turborepo.md) |
 | Node | 24 LTS | официально поддерживается всеми инструментами стека, Corepack в комплекте | [0006](adr/0006-node-24.md) |
@@ -43,7 +46,8 @@ shared/ — Zod-схемы, типы и константы; их импорти�
 ```
 writechart/
 ├─ frontend/                 # SPA: Vite 8, React 19, React Router 8, TanStack Query, Tailwind 4, shadcn/ui (AGENTS.md внутри)
-├─ backend/                  # API (AGENTS.md внутри)
+├─ backend/                  # API: Express 5, pg, pino; сборка Vite в dist/server.js (AGENTS.md внутри)
+│  └─ src/                   # app.ts, server.ts, config/, lib/, modules/<фича>/
 ├─ shared/                   # Zod-схемы, типы, константы (AGENTS.md внутри)
 │  └─ src/
 ├─ openspec/                 # спеки и изменения OpenSpec
@@ -92,7 +96,7 @@ writechart/
 | База в тестах | PostgreSQL `writechart_test` в Docker | настоящие запросы и миграции |
 | E2E | Playwright | главные сценарии |
 
-Установлены: Vitest (`shared/`, `frontend/`) и React Testing Library с jsdom (`frontend/`). Supertest, база в тестах и Playwright появятся позже.
+Установлены: Vitest (`shared/`, `frontend/`, `backend/`), React Testing Library с jsdom (`frontend/`), Supertest и база `writechart_test` в тестах (`backend/`). Тесты бэка без базы падают с подсказкой: скопируй `.env.example` в `.env` и запусти `docker compose up -d`. Playwright появится позже.
 
 Минимальный процент покрытия пока не требуем.
 
@@ -102,14 +106,20 @@ GitHub Actions, `.github/workflows/ci.yml`: workflow `CI`, одна задача
 
 - **Когда:** каждый PR в `master` и каждый push в `master` (то есть после слияния). Запуски на `master` наполняют кэш Yarn, которым пользуются все PR.
 - **Шаги:** `corepack enable` → Node из `.nvmrc` с кэшем Yarn → `yarn install --immutable` → `yarn lint`, `yarn format:check`, `yarn deps`, `yarn typecheck`, `yarn test`, `yarn build`.
+- **База:** сервис `postgres:18` в задаче `check` (`POSTGRES_DB: writechart_test`, порт 5432) и `DATABASE_URL_TEST` на уровне задачи — для тестов бэка в `yarn test`.
 - **Защита `master`** (настройки GitHub): обязательная проверка `check`, ветка должна быть актуальной перед слиянием.
-- **Позже:** сервис PostgreSQL (с первым тестом базы), Playwright (отдельным изменением).
+- **Позже:** Playwright (отдельным изменением).
 
 Деплой — на свой сервер, детали отложены.
 
 ## 7. Отложено
 
-- ORM (Drizzle или Prisma 7)
+- ORM (Drizzle или Prisma 7), миграции и очистка базы между тестами — вместе
+- `trust proxy`, `compression` — изменение про деплой
+- `express-rate-limit` — деплой и вход (без правильного `trust proxy` считает IP неверно)
+- `cookie-parser` — вход
+- как прод отдаёт фронт и `/api` (nginx или Express), Docker-образ бэка — деплой
+- отдельная CI-задача для тестов с базой — когда тесты с базой станут заметно тормозить CI
 - деплой на сервер и окружения (staging, preview)
 - редактор кода и устройство схем
 - лицензия (`LICENSE`)
