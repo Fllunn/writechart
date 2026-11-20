@@ -42,7 +42,7 @@ shared/ — Zod-схемы, типы и константы; их импорти�
 
 ```
 writechart/
-├─ frontend/                 # SPA (AGENTS.md внутри)
+├─ frontend/                 # SPA: Vite 8, React 19, React Router 8, TanStack Query, Tailwind 4, shadcn/ui (AGENTS.md внутри)
 ├─ backend/                  # API (AGENTS.md внутри)
 ├─ shared/                   # Zod-схемы, типы, константы (AGENTS.md внутри)
 │  └─ src/
@@ -65,8 +65,8 @@ writechart/
 ├─ .mcp.json                 # MCP-серверы для Claude Code (Context7)
 ├─ skills-lock.json          # источник и коммит каждого стороннего скилла
 ├─ docker-compose.yml        # PostgreSQL: writechart + writechart_test
-├─ package.json              # workspaces, packageManager, engines, скрипты lint/typecheck/test/format/deps
-├─ turbo.json                # задачи Turborepo: typecheck, test
+├─ package.json              # workspaces, packageManager, engines, скрипты dev/build/lint/typecheck/test/format/deps
+├─ turbo.json                # задачи Turborepo: build, dev, typecheck, test
 ├─ tsconfig.base.json        # общие настройки TypeScript, пакеты наследуют через extends
 ├─ .oxlintrc.json            # Oxlint
 ├─ .oxfmtrc.json             # oxfmt
@@ -87,10 +87,12 @@ writechart/
 | Слой | Инструмент | Что проверяем |
 |---|---|---|
 | Юнит | Vitest | функции, Zod-схемы, логика |
-| Компоненты | Vitest + React Testing Library | сложные формы и часть обычных |
+| Компоненты | Vitest + React Testing Library на jsdom | сложные формы и часть обычных |
 | API | Vitest + Supertest | маршруты, права доступа, ошибки |
 | База в тестах | PostgreSQL `writechart_test` в Docker | настоящие запросы и миграции |
 | E2E | Playwright | главные сценарии |
+
+Установлены: Vitest (`shared/`, `frontend/`) и React Testing Library с jsdom (`frontend/`). Supertest, база в тестах и Playwright появятся позже.
 
 Минимальный процент покрытия пока не требуем.
 
@@ -99,9 +101,9 @@ writechart/
 GitHub Actions, `.github/workflows/ci.yml`: workflow `CI`, одна задача `check` на `ubuntu-latest`.
 
 - **Когда:** каждый PR в `master` и каждый push в `master` (то есть после слияния). Запуски на `master` наполняют кэш Yarn, которым пользуются все PR.
-- **Шаги:** `corepack enable` → Node из `.nvmrc` с кэшем Yarn → `yarn install --immutable` → `yarn lint`, `yarn format:check`, `yarn deps`, `yarn typecheck`, `yarn test`.
+- **Шаги:** `corepack enable` → Node из `.nvmrc` с кэшем Yarn → `yarn install --immutable` → `yarn lint`, `yarn format:check`, `yarn deps`, `yarn typecheck`, `yarn test`, `yarn build`.
 - **Защита `master`** (настройки GitHub): обязательная проверка `check`, ветка должна быть актуальной перед слиянием.
-- **Позже:** сервис PostgreSQL (с первым тестом базы), `build` и Playwright (с каркасами).
+- **Позже:** сервис PostgreSQL (с первым тестом базы), Playwright (отдельным изменением).
 
 Деплой — на свой сервер, детали отложены.
 

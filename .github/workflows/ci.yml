@@ -34,3 +34,4 @@ jobs:
       - run: yarn deps
       - run: yarn typecheck
       - run: yarn test
+      - run: yarn build
