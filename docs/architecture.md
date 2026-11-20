@@ -68,6 +68,7 @@ writechart/
 ├─ .github/                  # шаблон PR, workflows/ci.yml (CI)
 ├─ AGENTS.md                 # главные инструкции для агентов
 ├─ CLAUDE.md                 # ссылка на AGENTS.md
+├─ README.md                 # о проекте, запуск для разработки
 ├─ .mcp.json                 # MCP-серверы для Claude Code (Context7)
 ├─ skills-lock.json          # источник и коммит каждого стороннего скилла
 ├─ docker-compose.yml        # PostgreSQL: writechart + writechart_test
@@ -124,8 +125,6 @@ GitHub Actions, `.github/workflows/ci.yml`: workflow `CI`, две задачи �
 - отдельная CI-задача для тестов с базой — когда тесты с базой станут заметно тормозить CI
 - деплой на сервер и окружения (staging, preview)
 - редактор кода и устройство схем
-- лицензия (`LICENSE`)
 - другие MCP-серверы (shadcn, PostgreSQL) — вместе с изменениями, где они нужны
-- файлы лицензий MIT для сторонних скиллов
 - автопроверка сообщений коммитов
 - трекер задач, роли и CODEOWNERS
