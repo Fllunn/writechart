@@ -14,6 +14,7 @@ Backend — Node.js 24 + TypeScript + Express 5
 PostgreSQL (Docker)
 
 shared/ — Zod-схемы, типы и константы; их импортируют frontend и backend
+core/   — ядро схем: код → блок-схема по ГОСТ; пока каркас, первым его импортирует frontend, потом backend
 ```
 
 Фронт и бэк — отдельные пакеты и отдельные процессы. Контракт между ними — Zod-схемы в `shared/`: одна схема проверяет форму в браузере и запрос на сервере, а TypeScript-тип выводится из неё же.
@@ -22,7 +23,7 @@ shared/ — Zod-схемы, типы и константы; их импорти�
 
 | Область | Выбор | Причина | ADR |
 |---|---|---|---|
-| Репозиторий | монорепо `frontend/` + `backend/` + `shared/` | одна правка API и UI в одном PR, общие типы без публикации пакетов | [0001](adr/0001-monorepo.md) |
+| Репозиторий | монорепо `frontend/` + `backend/` + `shared/` + `core/` | одна правка API и UI в одном PR, общие типы без публикации пакетов | [0001](adr/0001-monorepo.md) |
 | Фронт | React + Vite, SPA | SSR не нужен: редактор работает в браузере; бэкенд виден как отдельная часть | [0002](adr/0002-frontend-spa.md) |
 | Бэк | Express 5 + TypeScript | фреймворк из курса Node.js, мало потребляет ресурсов | [0003](adr/0003-backend-express.md) |
 | Запуск и сборка бэка | dev — `node --watch` (Node 24 стирает типы), прод — `vite build` в один `dist/server.js` | без шага сборки в dev; на проде не нужен `node_modules` | [0014](adr/0014-backend-build-and-runtime.md) |
@@ -33,6 +34,7 @@ shared/ — Zod-схемы, типы и константы; их импорти�
 | Пакеты и задачи | Yarn 4.18.1 (`node-modules`) + Turborepo | совместимость со всеми инструментами; кэш и порядок задач | [0005](adr/0005-yarn-turborepo.md) |
 | Node | 24 LTS | официально поддерживается всеми инструментами стека, Corepack в комплекте | [0006](adr/0006-node-24.md) |
 | Контракт API | Zod в `shared/` | одна схема для фронта, бэка и типов | [0007](adr/0007-shared-zod.md) |
+| Ядро схем | пакет `core/` без сборки, без типов DOM и Node | один код строит схему в браузере, а позже и на бэке | [0016](adr/0016-core-package.md) |
 | Библиотеки фронта | React Router, TanStack Query, Zustand, shadcn/ui | разделение серверных и интерфейсных данных | [0008](adr/0008-frontend-libraries.md) |
 | TypeScript | 7 (компилятор на Go) | в 8–12 раз быстрее на полной сборке по данным Microsoft; без второй версии TS | [0012](adr/0012-ts7-oxc-tooling.md) |
 | Тесты | Vitest, React Testing Library, Supertest, Playwright | пирамида тестов, настоящая база в тестах | [0009](adr/0009-testing.md) |
@@ -49,6 +51,8 @@ writechart/
 ├─ backend/                  # API: Express 5, pg, pino; сборка Vite в dist/server.js (AGENTS.md внутри)
 │  └─ src/                   # app.ts, server.ts, config/, lib/, modules/<фича>/
 ├─ shared/                   # Zod-схемы, типы, константы (AGENTS.md внутри)
+│  └─ src/
+├─ core/                     # ядро схем: чистый TypeScript без DOM и Node (AGENTS.md внутри)
 │  └─ src/
 ├─ e2e/                      # E2E на Playwright: собранный фронт + бэк + база в Chromium (AGENTS.md внутри)
 │  └─ tests/
@@ -99,7 +103,7 @@ writechart/
 | База в тестах | PostgreSQL `writechart_test` в Docker | настоящие запросы и миграции |
 | E2E | Playwright | главные сценарии |
 
-Установлены: Vitest (`shared/`, `frontend/`, `backend/`), React Testing Library с jsdom (`frontend/`), Supertest и база `writechart_test` в тестах (`backend/`). Тесты бэка без базы падают с подсказкой: скопируй `.env.example` в `.env` и запусти `docker compose up -d`. Установлен Playwright (`e2e/`, `yarn e2e`): turbo собирает фронт и бэк, Playwright поднимает `vite preview` (4173) и `dist/server.js` (3100) с базой `writechart_test` и гоняет тесты в Chromium.
+Установлены: Vitest (`shared/`, `core/`, `frontend/`, `backend/`), React Testing Library с jsdom (`frontend/`), Supertest и база `writechart_test` в тестах (`backend/`). Тесты бэка без базы падают с подсказкой: скопируй `.env.example` в `.env` и запусти `docker compose up -d`. Установлен Playwright (`e2e/`, `yarn e2e`): turbo собирает фронт и бэк, Playwright поднимает `vite preview` (4173) и `dist/server.js` (3100) с базой `writechart_test` и гоняет тесты в Chromium.
 
 Минимальный процент покрытия пока не требуем.
 
@@ -124,7 +128,8 @@ GitHub Actions, `.github/workflows/ci.yml`: workflow `CI`, две задачи �
 - как прод отдаёт фронт и `/api` (nginx или Express), Docker-образ бэка — деплой
 - отдельная CI-задача для тестов с базой — когда тесты с базой станут заметно тормозить CI
 - деплой на сервер и окружения (staging, preview)
-- редактор кода и устройство схем
+- устройство схем (парсер, раскладка, отрисовка) — следующее изменение, `add-flowchart-python`
+- полноценный редактор кода
 - другие MCP-серверы (shadcn, PostgreSQL) — вместе с изменениями, где они нужны
 - автопроверка сообщений коммитов
 - трекер задач, роли и CODEOWNERS

@@ -2458,6 +2458,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@writechart/core@workspace:core":
+  version: 0.0.0-use.local
+  resolution: "@writechart/core@workspace:core"
+  dependencies:
+    typescript: "npm:~7.0.2"
+    vite: "npm:^8.3.8"
+    vitest: "npm:^5.1.1"
+  languageName: unknown
+  linkType: soft
+
 "@writechart/e2e@workspace:e2e":
   version: 0.0.0-use.local
   resolution: "@writechart/e2e@workspace:e2e"
