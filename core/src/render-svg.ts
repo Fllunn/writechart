@@ -10,12 +10,10 @@ import {
   type SvgNode,
 } from "./svg-builder.ts";
 
-/** Цвета по образцу схем человека (design, решение 19). */
-const ink = "#222";
-const paper = "#fcfcfc";
+const ink = "#000";
+const paper = "#fff";
+const textInk = "#222";
 const labelInk = "#444";
-const arrowLength = 2.5;
-const arrowHalfWidth = 0.9;
 const dash = "2 1";
 
 const points = (list: readonly Point[]) => list.map((p) => `${n(p.x)},${n(p.y)}`).join(" ");
@@ -80,16 +78,12 @@ function shapeText(shape: Shape, drawing: Drawing): SvgNode[] {
   });
 }
 
-/**
- * Линия и её стрелки. Как в draw.io: отрезок со стрелкой кончается у основания стрелки и не
- * идёт под треугольником (иначе у острого кончика, который тоньше линии, видна «шейка»).
- * Острая вершина — на дальнем краю линии, в которую входит стрелка: за край не выходит,
- * а у ближнего края треугольник уже шире линии, поэтому зазора нет. На угле линия
- * разрывается у основания стрелки и продолжается от угла.
- */
+/** Отрезок со стрелкой заканчивается у выреза. На повороте линия продолжает идти от угла. */
 function flowLine(line: FlowLine, strokeWidth: number): SvgNode[] {
   const arrowAt = new Set(line.arrows);
-  const half = strokeWidth / 2;
+  const tipOffset = 1.118 * strokeWidth;
+  const arrowLength = 7 * strokeWidth;
+  const arrowHalfWidth = arrowLength / 2;
   const commands: string[] = [];
   const arrows: SvgNode[] = [];
   line.points.forEach((point, index) => {
@@ -104,23 +98,29 @@ function flowLine(line: FlowLine, strokeWidth: number): SvgNode[] {
     }
     const length = Math.hypot(point.x - before.x, point.y - before.y) || 1;
     const [ux, uy] = [(point.x - before.x) / length, (point.y - before.y) / length];
-    const tip = { x: point.x + ux * half, y: point.y + uy * half };
+    const tip = { x: point.x - ux * tipOffset, y: point.y - uy * tipOffset };
     const base = { x: tip.x - ux * arrowLength, y: tip.y - uy * arrowLength };
-    commands.push(`L ${n(base.x)} ${n(base.y)}`);
+    const notch = {
+      x: tip.x - ux * arrowLength * 0.75,
+      y: tip.y - uy * arrowLength * 0.75,
+    };
+    commands.push(`L ${n(notch.x)} ${n(notch.y)}`);
     if (index < line.points.length - 1) commands.push(`M ${n(point.x)} ${n(point.y)}`);
     arrows.push(
       el("polygon", {
         points: points([
           tip,
           { x: base.x - uy * arrowHalfWidth, y: base.y + ux * arrowHalfWidth },
+          notch,
           { x: base.x + uy * arrowHalfWidth, y: base.y - ux * arrowHalfWidth },
         ]),
         fill: ink,
-        stroke: "none",
+        "stroke-miterlimit": 10,
       }),
     );
   });
-  return [el("path", { d: commands.join(" ") }), ...arrows];
+  const lineCap = arrows.length > 0 ? "butt" : "square";
+  return [el("path", { d: commands.join(" "), "stroke-linecap": lineCap }), ...arrows];
 }
 
 /** SVG чертежа: размеры в мм, `viewBox` в мм — печать в масштабе 100 % даёт те же размеры. */
@@ -128,7 +128,7 @@ export function renderSvg(drawing: Drawing): string {
   const { style } = drawing;
   // Знаков, которых нет в шрифте (≤, ⌊), браузер ищет дальше по списку.
   const family = `${style.font.family}, Times New Roman, serif`;
-  const text = (nodes: SvgNode[], color = ink, size = style.size) =>
+  const text = (nodes: SvgNode[], color = textInk, size = style.size) =>
     el("g", { fill: color, stroke: "none", "font-family": family, "font-size": size }, nodes);
   return serialize(
     el(
@@ -142,18 +142,16 @@ export function renderSvg(drawing: Drawing): string {
       [
         el(
           "g",
-          // Квадратные концы закрывают угол там, где линия входит в другую линию.
           {
             fill: "none",
             stroke: ink,
             "stroke-width": drawing.strokeWidth,
-            "stroke-linecap": "square",
           },
           drawing.lines.flatMap((line) => flowLine(line, drawing.strokeWidth)),
         ),
         ...drawing.shapes.map((shape) =>
           el("g", { "data-block-id": shape.id }, [
-            el("g", { fill: paper, stroke: ink, "stroke-width": drawing.strokeWidth }, [
+            el("g", { fill: paper, stroke: ink, "stroke-width": 2 * drawing.strokeWidth }, [
               outline(shape),
             ]),
             text(shapeText(shape, drawing)),

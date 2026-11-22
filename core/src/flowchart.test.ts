@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { flowchart } from "./flowchart.ts";
+import { layout } from "./layout.ts";
+import { renderSvg } from "./render-svg.ts";
 import { parsePython } from "./test-support/parse-python.ts";
 
 async function build(code: string) {
@@ -52,36 +54,55 @@ describe("flowchart", () => {
     for (const text of [">Начало<", ">Конец<", ">да<", ">нет<"]) expect(svg).toContain(text);
   });
 
-  test("стрелка острая, линия кончается у её основания, вершина — на дальнем краю линии стыка", async () => {
-    const svg = await svgOf("while i <= n:\n    if i % 2 == 0:\n        i += 1\n    i += 1");
-    const strokeWidth = Number(svg.match(/stroke-width="([\d.]+)" stroke-linecap/)?.[1]);
-    const arrows = [...svg.matchAll(/<polygon points="([^"]+)" fill="#222" stroke="none">/g)].map(
-      (m) => (m[1] ?? "").split(" ").map((pair) => pair.split(",").map(Number)),
+  test("стрелка classic заканчивается у центра стыка, линия — у выреза", () => {
+    const drawing = layout({ body: [] }, { strokeWidth: 1 });
+    const svg = renderSvg({
+      ...drawing,
+      width: 40,
+      height: 40,
+      lines: [
+        {
+          points: [
+            { x: 20, y: 20 },
+            { x: 10, y: 20 },
+            { x: 10, y: 10 },
+            { x: 20, y: 10 },
+          ],
+          arrows: [1, 2],
+        },
+        {
+          points: [
+            { x: 30, y: 15 },
+            { x: 20, y: 15 },
+          ],
+          arrows: [1],
+        },
+        {
+          points: [
+            { x: 20, y: 10 },
+            { x: 20, y: 20 },
+          ],
+          arrows: [],
+        },
+      ],
+    });
+
+    expect(svg).toContain('<g fill="none" stroke="#000" stroke-width="1">');
+    expect(svg).toContain(
+      '<path d="M 20 20 L 16.37 20 M 10 20 L 10 16.37 M 10 10 L 20 10" stroke-linecap="butt">',
     );
-    expect(arrows.length).toBeGreaterThan(0);
-    const vertices = new Set(
-      [...svg.matchAll(/<path d="([^"]+)"/g)].flatMap((m) =>
-        [...(m[1] ?? "").matchAll(/[ML] ([\d.]+) ([\d.]+)/g)].map(
-          (p) => `${Number(p[1])},${Number(p[2])}`,
-        ),
-      ),
+    expect(svg).toContain('<path d="M 30 15 L 26.37 15" stroke-linecap="butt">');
+
+    const arrows = Array.from(
+      svg.matchAll(/<polygon points="([^"]+)" fill="#000" stroke-miterlimit="10">/g),
+      (match) => match[1],
     );
-    const key = (x: number, y: number) =>
-      `${Math.round(x * 100) / 100},${Math.round(y * 100) / 100}`;
-    for (const points of arrows) {
-      expect(points).toHaveLength(3);
-      const [[tx = 0, ty = 0] = [], [b1x = 0, b1y = 0] = [], [b2x = 0, b2y = 0] = []] = points;
-      const [bx, by] = [(b1x + b2x) / 2, (b1y + b2y) / 2];
-      // Линия доходит ровно до основания стрелки и не идёт под треугольником.
-      expect(vertices.has(key(bx, by))).toBe(true);
-      // Стык (откуда идёт линия дальше) — на пол-линии позади вершины: вершина на дальнем
-      // краю линии стыка, не дальше и не ближе.
-      const length = Math.hypot(tx - bx, ty - by);
-      const [ux, uy] = [(tx - bx) / length, (ty - by) / length];
-      expect(vertices.has(key(tx - (ux * strokeWidth) / 2, ty - (uy * strokeWidth) / 2))).toBe(
-        true,
-      );
-    }
+
+    expect(arrows).toEqual([
+      "11.12,20 18.12,16.5 16.37,20 18.12,23.5",
+      "10,11.12 13.5,18.12 10,16.37 6.5,18.12",
+      "21.12,15 28.12,11.5 26.37,15 28.12,18.5",
+    ]);
   });
 
   test("надстрочный текст — tspan с baseline-shift super", async () => {

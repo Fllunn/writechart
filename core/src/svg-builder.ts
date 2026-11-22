@@ -15,6 +15,7 @@ const attributes = new Set([
   "stroke-width",
   "stroke-dasharray",
   "stroke-linecap",
+  "stroke-miterlimit",
   "font-family",
   "font-size",
   "text-anchor",
