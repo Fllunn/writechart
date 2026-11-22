@@ -5,6 +5,7 @@
     "frontend",
     "backend",
     "shared",
+    "core",
     "e2e"
   ],
   "scripts": {

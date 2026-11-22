@@ -15,6 +15,7 @@ Writechart — веб-сервис, который строит блок-схе�
 | `frontend/` | React + Vite SPA, React Router, TanStack Query, Zustand, shadcn/ui |
 | `backend/` | Node.js + TypeScript + Express 5, PostgreSQL |
 | `shared/` | Zod-схемы, типы, константы для фронта и бэка |
+| `core/` | Ядро схем: код → блок-схема по ГОСТ; чистый TypeScript без DOM и Node |
 | `e2e/` | E2E-тесты Playwright: собранный фронт + бэк + база в Chromium |
 
 Перед работой в папке прочитай её `AGENTS.md`. Архитектура и причины решений: `docs/architecture.md`, `docs/adr/`.
