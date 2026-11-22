@@ -582,6 +582,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fontsource/tinos@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/tinos@npm:5.3.0"
+  checksum: 10c0/a6cbae046206235b5f5bd490205c0ef84a6b0e7f0b86a34a7b5c36f4ac6af844dc7ee1d55a691b9e2ebe0076614e8128a6c39275545f2685644c964d6096d072
+  languageName: node
+  linkType: hard
+
 "@inquirer/ansi@npm:^2.1.0":
   version: 2.1.0
   resolution: "@inquirer/ansi@npm:2.1.0"
@@ -2240,6 +2247,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/trusted-types@npm:^2.0.7":
+  version: 2.0.7
+  resolution: "@types/trusted-types@npm:2.0.7"
+  checksum: 10c0/4c4855f10de7c6c135e0d32ce462419d8abbbc33713b31d294596c0cc34ae1fa6112a2f9da729c8f7a20707782b0d69da3b1f8df6645b0366d08825ca1522e0c
+  languageName: node
+  linkType: hard
+
 "@types/validate-npm-package-name@npm:^4.0.2":
   version: 4.0.2
   resolution: "@types/validate-npm-package-name@npm:4.0.2"
@@ -2458,13 +2472,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@writechart/core@workspace:core":
+"@writechart/core@workspace:^, @writechart/core@workspace:core":
   version: 0.0.0-use.local
   resolution: "@writechart/core@workspace:core"
   dependencies:
+    "@fontsource/tinos": "npm:^5.3.0"
+    "@types/node": "npm:^24"
+    opentype.js: "npm:^2.0.0"
+    tree-sitter-python: "npm:^0.25.0"
     typescript: "npm:~7.0.2"
     vite: "npm:^8.3.8"
     vitest: "npm:^5.1.1"
+    web-tree-sitter: "npm:^0.27.2"
   languageName: unknown
   linkType: soft
 
@@ -2487,6 +2506,7 @@ __metadata:
   dependencies:
     "@base-ui/react": "npm:^1.9.0"
     "@fontsource-variable/geist": "npm:^5.3.0"
+    "@fontsource/tinos": "npm:^5.3.0"
     "@tailwindcss/vite": "npm:^4.3.5"
     "@tanstack/react-query": "npm:^5.108.0"
     "@testing-library/dom": "npm:^10.4.2"
@@ -2496,8 +2516,10 @@ __metadata:
     "@types/react": "npm:^19.3.0"
     "@types/react-dom": "npm:^19.3.0"
     "@vitejs/plugin-react": "npm:^6.3.0"
+    "@writechart/core": "workspace:^"
     class-variance-authority: "npm:^0.7.1"
     cn: "npm:^0.5.2"
+    dompurify: "npm:^3.4.18"
     jsdom: "npm:^31.0.1"
     lucide-react: "npm:^1.76.0"
     react: "npm:^19.3.1"
@@ -2505,10 +2527,12 @@ __metadata:
     react-router: "npm:^8.5.2"
     shadcn: "npm:^4.23.0"
     tailwindcss: "npm:^4.3.5"
+    tree-sitter-python: "npm:^0.25.0"
     tw-animate-css: "npm:^1.4.0"
     typescript: "npm:~7.0.2"
     vite: "npm:^8.3.8"
     vitest: "npm:^5.1.1"
+    web-tree-sitter: "npm:^0.27.2"
   languageName: unknown
   linkType: soft
 
@@ -3181,6 +3205,18 @@ __metadata:
   version: 0.6.3
   resolution: "dom-accessibility-api@npm:0.6.3"
   checksum: 10c0/10bee5aa514b2a9a37c87cd81268db607a2e933a050074abc2f6fa3da9080ebed206a320cbc123567f2c3087d22292853bdfdceaffdd4334ffe2af9510b29360
+  languageName: node
+  linkType: hard
+
+"dompurify@npm:^3.4.18":
+  version: 3.4.18
+  resolution: "dompurify@npm:3.4.18"
+  dependencies:
+    "@types/trusted-types": "npm:^2.0.7"
+  dependenciesMeta:
+    "@types/trusted-types":
+      optional: true
+  checksum: 10c0/03c96d4e04ce6588014d008c09bb80e97dc1f905acc28d0be0cf14ea6974f788f5706cac409a5b7b7a73831dbce15ac7ca68c6fe08b2e1522254f06ce6647e87
   languageName: node
   linkType: hard
 
@@ -4632,6 +4668,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"node-addon-api@npm:^8.5.0":
+  version: 8.9.2
+  resolution: "node-addon-api@npm:8.9.2"
+  dependencies:
+    node-gyp: "npm:latest"
+  checksum: 10c0/5cf5231e0da22b22862e6b593982a0e390ca89d022a9ac666c83deceecf20378cb8afe47c456ac1a58a9f62ef60099c950aec05814a287fdfd751d9d154fb12d
+  languageName: node
+  linkType: hard
+
+"node-gyp-build@npm:^4.8.4":
+  version: 4.8.4
+  resolution: "node-gyp-build@npm:4.8.4"
+  bin:
+    node-gyp-build: bin.js
+    node-gyp-build-optional: optional.js
+    node-gyp-build-test: build-test.js
+  checksum: 10c0/444e189907ece2081fe60e75368784f7782cfddb554b60123743dfb89509df89f1f29c03bbfa16b3a3e0be3f48799a4783f487da6203245fa5bed239ba7407e1
+  languageName: node
+  linkType: hard
+
 "node-gyp@npm:latest":
   version: 13.1.0
   resolution: "node-gyp@npm:13.1.0"
@@ -4775,6 +4831,15 @@ __metadata:
     is-docker: "npm:^2.1.1"
     is-wsl: "npm:^2.2.0"
   checksum: 10c0/bb6b3a58401dacdb0aad14360626faf3fb7fba4b77816b373495988b724fb48941cad80c1b65d62bb31a17609b2cd91c41a181602caea597ca80dfbcc27e84c9
+  languageName: node
+  linkType: hard
+
+"opentype.js@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "opentype.js@npm:2.0.0"
+  bin:
+    ot: bin/ot
+  checksum: 10c0/85539aca7b99ec10019adcdd2bcc74d0ab2757277f775394826db0fb465c5e075fa67cff83ce30082c990640225c1c678ddd23c1ba1c9580d167335ad5300b91
   languageName: node
   linkType: hard
 
@@ -6383,6 +6448,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tree-sitter-python@npm:^0.25.0":
+  version: 0.25.0
+  resolution: "tree-sitter-python@npm:0.25.0"
+  dependencies:
+    node-addon-api: "npm:^8.5.0"
+    node-gyp: "npm:latest"
+    node-gyp-build: "npm:^4.8.4"
+  peerDependencies:
+    tree-sitter: ^0.25.0
+  peerDependenciesMeta:
+    tree-sitter:
+      optional: true
+  checksum: 10c0/c047648655b4d605bfa052ec11146286711f6d01e1064940f12fe09afae247b2f2ea9af0c46fa50f986d2c3e8600d67e5e540a2cc2d426e1325204a9941e223f
+  languageName: node
+  linkType: hard
+
 "ts-morph@npm:^26.0.0":
   version: 26.0.0
   resolution: "ts-morph@npm:26.0.0"
@@ -6841,6 +6922,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"web-tree-sitter@npm:^0.27.2":
+  version: 0.27.2
+  resolution: "web-tree-sitter@npm:0.27.2"
+  checksum: 10c0/9858af3063a869691ee90c42ac4737f763f9f679dfbd4e6c15e1f3eac5436747030f4b2f8148327238aa0fe5a3cf39299cea3a6954c549637c5f185dc2c867e7
+  languageName: node
+  linkType: hard
+
 "webidl-conversions@npm:^8.0.1":
   version: 8.0.1
   resolution: "webidl-conversions@npm:8.0.1"
@@ -6925,6 +7013,9 @@ __metadata:
     oxlint: "npm:^1.94.0"
     oxlint-tsgolint: "npm:^7.0.2007"
     turbo: "npm:^2.11.13"
+  dependenciesMeta:
+    tree-sitter-python:
+      built: false
   languageName: unknown
   linkType: soft
 

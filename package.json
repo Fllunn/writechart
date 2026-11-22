@@ -27,6 +27,11 @@
     "oxlint-tsgolint": "^7.0.2007",
     "turbo": "^2.11.13"
   },
+  "dependenciesMeta": {
+    "tree-sitter-python": {
+      "built": false
+    }
+  },
   "engines": {
     "node": ">=24 <25"
   },

@@ -10,11 +10,25 @@ SPA для браузера: React 19 + Vite 8. Установлено:
 - Tailwind CSS 4 (плагин `@tailwindcss/vite`, настройка в `src/index.css`);
 - shadcn/ui на основе Base UI, стиль nova (`components.json`).
 
+Схема: `web-tree-sitter`, `tree-sitter-python`, `dompurify`, `@fontsource/tinos` и ядро `@writechart/core` (раздел «Схема» ниже).
+
 Решено, но пока не установлено: Zustand — состояние интерфейса, которого нет на сервере (тема, выделенный блок, масштаб).
 
 Алиас `@/` указывает на `src/` (`paths` в `tsconfig.json` и `tsconfig.app.json`, `resolve.alias` в `vite.config.ts`).
 
-TypeScript разделён, как в шаблоне Vite: `tsconfig.app.json` — код в `src/` с типами браузера (`vite/client`), `tsconfig.node.json` — `vite.config.ts` с типами Node, `tsconfig.json` — ссылки на оба. Проверка — `tsc -b`. Поэтому `process`, `Buffer` и `node:*` в `src/` дают ошибку типов.
+TypeScript разделён, как в шаблоне Vite: `tsconfig.app.json` — код в `src/` с типами браузера (`vite/client`) и `allowImportingTsExtensions` (исходники ядра импортируют свои файлы с `.ts`), `tsconfig.node.json` — `vite.config.ts` с типами Node, `tsconfig.json` — ссылки на оба. Проверка — `tsc -b`. Поэтому `process`, `Buffer` и `node:*` в `src/` дают ошибку типов.
+
+## Схема: `src/features/flowchart/`
+
+Главная страница строит блок-схему из кода в браузере, код не уходит на сервер.
+
+- `flowchart.worker.ts` — Web Worker: грузит `web-tree-sitter` и грамматику Python, разбирает код, вызывает `flowchart` из `@writechart/core/flowchart`. Сообщения — `flowchart-protocol.ts`.
+- wasm подключается `?url`-импортом (`web-tree-sitter/web-tree-sitter.wasm?url`, `tree-sitter-python/tree-sitter-python.wasm?url`) и передаётся в `Parser.init({ locateFile })` и `Language.load`: так Vite кладёт оба файла в `dist/assets`. Воркер собирается форматом `es` (`worker.format` в `vite.config.ts`).
+- `use-flowchart.ts` — хук: один воркер, только последний код, таймаут 2 с (`terminate()` и новый воркер), последняя удачная схема при ошибке.
+- `flowchart-view.tsx` — вставка SVG. SVG из ядра всегда проходит `DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } })` перед `dangerouslySetInnerHTML`: второй слой к белому списку строителя ядра.
+- `code-input.tsx` — поле кода без зависимостей: номера строк, Tab/Shift+Tab, выделение строк с ошибкой.
+
+Новая функция со своими компонентами, хуками и воркерами — своя папка `src/features/<имя>/`; страница в `src/pages/` её только собирает. В jsdom нет `Worker`: тест страницы подменяет его `vi.stubGlobal`.
 
 ## shadcn/ui
 
@@ -44,5 +58,5 @@ yarn dlx shadcn@4.23.0 info
 - Компонент держи в файле, который экспортирует только компоненты (константы можно). Иначе не работает Fast Refresh; это проверяет правило Oxlint `react/only-export-components`.
 - Страницы лежат в `src/pages/`, по файлу на страницу (`src/pages/home-page.tsx`). Массив маршрутов в `src/routes.tsx` только импортирует их.
 - Имена файлов — kebab-case (`home-page.tsx`), как у компонентов shadcn (`components/ui/button.tsx`). Имена компонентов внутри — PascalCase (`HomePage`).
-- Остальная раскладка `src/` (где лежат тесты, папки сверх тех, что задаёт `components.json`) пока не решена: договоримся с первыми экранами.
+- Код функции — в `src/features/<имя>/`, тесты рядом (`code-input.test.tsx`).
 - Тесты: Vitest + React Testing Library на jsdom (`yarn workspace @writechart/frontend test`), для сложных форм и части обычных компонентов. Импорты из `vitest` явные (`globals` выключен), поэтому DOM после каждого теста чистит `afterEach(cleanup)` в `src/test-setup.ts`. E2E главных сценариев на Playwright — в пакете [`e2e/`](../e2e/AGENTS.md).

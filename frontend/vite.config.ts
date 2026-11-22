@@ -24,6 +24,10 @@ export default defineConfig(({ mode }) => {
         "/api": env["API_PROXY_TARGET"] || "http://127.0.0.1:3000",
       },
     },
+    // Воркер схемы — ES-модуль: web-tree-sitter грузит wasm через import.meta.url, формат iife так не умеет.
+    worker: {
+      format: "es",
+    },
     test: {
       environment: "jsdom",
       setupFiles: ["./src/test-setup.ts"],

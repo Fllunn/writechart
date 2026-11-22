@@ -4,15 +4,21 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*.ts",
+    "./test-support/*": null
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b",
     "test": "vitest run"
   },
   "devDependencies": {
+    "@fontsource/tinos": "^5.3.0",
+    "@types/node": "^24",
+    "opentype.js": "^2.0.0",
+    "tree-sitter-python": "^0.25.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.8",
-    "vitest": "^5.1.1"
+    "vitest": "^5.1.1",
+    "web-tree-sitter": "^0.27.2"
   }
 }

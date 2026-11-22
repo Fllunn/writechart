@@ -5,6 +5,8 @@
     "jsx": "react-jsx",
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
+    // Исходники @writechart/core импортируют свои файлы с расширением .ts.
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"]
     }

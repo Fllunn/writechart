@@ -20,3 +20,5 @@
 | [0014](0014-backend-build-and-runtime.md) | Запуск и сборка бэка: Node без сборки в dev, Vite на прод | принято |
 | [0015](0015-logging-pino.md) | Логи бэка: pino и pino-http | принято |
 | [0016](0016-core-package.md) | Ядро схем в пакете `core` без DOM и Node | принято |
+| [0017](0017-parser-tree-sitter.md) | Парсер кода — tree-sitter | принято |
+| [0018](0018-flowchart-pipeline.md) | Схема: структура → чертёж → SVG, своя раскладка | принято |
