@@ -20,7 +20,7 @@
 
 ## 4. Проверка на GitHub (человек)
 
-- [ ] 4.1 Человек пушит ветку от `master` и открывает PR; проверить: `CI / check` и `CI / e2e` зелёные, в логе `yarn typecheck` и `yarn test` есть `@writechart/core`
+- [x] 4.1 Человек пушит ветку от `master` и открывает PR; проверить: `CI / check` и `CI / e2e` зелёные, в логе `yarn typecheck` и `yarn test` есть `@writechart/core`
 
 ## Workflow follow-up
 
