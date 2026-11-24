@@ -1,4 +1,4 @@
-// Структура → чертёж: своя раскладка вложенными коробками (design, решения 3 и 19).
+// Структура → чертёж: своя раскладка вложенными коробками (design, решения 3, 19 и 21).
 import {
   arrowOnLeftOrUp,
   arrowsOf,
@@ -17,7 +17,9 @@ import type { Program, Step, Text } from "./structure.ts";
 import {
   blockHeight,
   blockWidth,
+  decisionRatio,
   decisionSize,
+  processToDataWidthRatio,
   symbolLines,
   symbolRules,
   terminatorHeight,
@@ -50,12 +52,12 @@ export interface LayoutOptions {
 /** Кегль по умолчанию, мм: ряд шрифтов ЕСКД. Все размеры ниже — от него. */
 const k = 3.5;
 
-/** Значения по умолчанию — design, решение 19 (по замеру схем человека; промежутки — по его схемам из draw.io). */
+/** Значения по умолчанию (design, решения 19–21). */
 export const defaultLayoutOptions: LayoutOptions = {
   style: { font: tinos, size: k, lineHeight: 1.25 * k, supScale: 0.7 },
   rules: symbolRules(k),
-  gap: 1.2 * k,
-  exitGap: 2 * k,
+  gap: 1.4 * k,
+  exitGap: 3.4 * k,
   side: 3 * k,
   step: 1.5 * k,
   margin: 1.5 * k,
@@ -131,6 +133,7 @@ const unsupportedMark = "пока не поддерживается";
 
 /** Простой шаг: один блок процесса или данных, без вложенных шагов. */
 type SimpleStep = Extract<Step, { kind: "process" | "input" | "output" | "unsupported" }>;
+type DecisionStep = Extract<Step, { kind: "if" | "while" }>;
 
 const isSimple = (step: Step): step is SimpleStep =>
   step.kind === "process" ||
@@ -146,13 +149,19 @@ const simpleText = (step: SimpleStep): Text =>
     ? joinText(step.firstLine, [{ kind: "break" }], unsupportedMark)
     : step.text;
 
-function* simpleSteps(steps: readonly Step[]): Generator<SimpleStep> {
+/** Шаги одной оси. Ветка «нет» начинает собственную ось справа. */
+function* axisSteps(steps: readonly Step[]): Generator<Step> {
   for (const step of steps) {
-    if (isSimple(step)) yield step;
-    else if (step.kind === "if") {
-      yield* simpleSteps(step.then);
-      yield* simpleSteps(step.else);
-    } else yield* simpleSteps(step.body);
+    yield step;
+    if (step.kind === "if") yield* axisSteps(step.then);
+    if (step.kind === "while") yield* axisSteps(step.body);
+  }
+}
+
+function* allSteps(steps: readonly Step[]): Generator<Step> {
+  for (const step of axisSteps(steps)) {
+    yield step;
+    if (step.kind === "if") yield* allSteps(step.else);
   }
 }
 
@@ -162,37 +171,66 @@ interface PendingBlock {
   readonly lines: readonly TextLine[];
   readonly height: number;
   readonly width: number;
-  readonly extra: Pick<Shape, "dashed"> & Partial<Pick<Shape, "role" | "sourceLine">>;
+  readonly extra: Pick<Shape, "dashed" | "role" | "sourceLine" | "axisId">;
+}
+
+interface AxisWidths {
+  readonly id: number;
+  readonly process: number;
+  readonly other: number;
 }
 
 class Layout {
   #nextId = 1;
+  #nextAxisId = 1;
+  readonly #lines = new Map<Step, readonly TextLine[]>();
+  readonly #blocks = new Map<SimpleStep, PendingBlock>();
   readonly options: LayoutOptions;
   /** Высота всех процессов и данных схемы — по самому высокому. */
   readonly blockHeight: number;
+  readonly decisionHeight: number;
 
   constructor(options: LayoutOptions, program: Program) {
     this.options = options;
     const { style, rules } = options;
-    this.blockHeight = Math.max(
-      rules.blockMinHeight,
-      ...[...simpleSteps(program.body)].map((step) =>
-        blockHeight(symbolLines(simpleKind(step), simpleText(step), style, rules), style, rules),
-      ),
-    );
+    let maxBlockHeight = rules.blockMinHeight;
+    let maxDecisionHeight = rules.decisionMinHeight;
+    for (const step of allSteps(program.body)) {
+      if (isSimple(step)) {
+        const lines = symbolLines(simpleKind(step), simpleText(step), style, rules);
+        this.#lines.set(step, lines);
+        maxBlockHeight = Math.max(maxBlockHeight, blockHeight(lines, style, rules));
+      } else {
+        const lines = symbolLines("decision", step.condition, style, rules);
+        this.#lines.set(step, lines);
+        maxDecisionHeight = Math.max(maxDecisionHeight, decisionSize(lines, style, rules).height);
+      }
+    }
+    this.blockHeight = maxBlockHeight;
+    this.decisionHeight = maxDecisionHeight;
+  }
+
+  linesFor(step: Step): readonly TextLine[] {
+    const lines = this.#lines.get(step);
+    if (!lines) throw new Error("текст шага не подготовлен");
+    return lines;
   }
 
   pending(step: SimpleStep): PendingBlock {
+    const cached = this.#blocks.get(step);
+    if (cached) return cached;
     const { style, rules } = this.options;
     const kind = simpleKind(step);
-    const lines = symbolLines(kind, simpleText(step), style, rules);
-    return {
+    const lines = this.linesFor(step);
+    const block = {
       kind,
       lines,
       height: this.blockHeight,
       width: blockWidth(kind, lines, this.blockHeight, style, rules),
       extra: { dashed: step.kind === "unsupported", sourceLine: step.line },
     };
+    this.#blocks.set(step, block);
+    return block;
   }
 
   terminator(text: string, role: "start" | "end"): PendingBlock {
@@ -224,9 +262,7 @@ class Layout {
       width,
       height,
       lines,
-      dashed: extra.dashed,
-      ...(extra.role ? { role: extra.role } : {}),
-      ...(extra.sourceLine === undefined ? {} : { sourceLine: extra.sourceLine }),
+      ...extra,
     };
     return {
       shapes: [shape],
@@ -287,43 +323,72 @@ class Layout {
     return result;
   }
 
-  /**
-   * Шаги одной оси. Простые блоки получают общую ширину — по самому широкому (решение 19);
-   * `before` и `after` — блоки той же оси вне шагов (терминаторы программы).
-   */
-  column(steps: readonly Step[], before: PendingBlock[] = [], after: PendingBlock[] = []): Box {
-    const items = steps.map((step) => (isSimple(step) ? this.pending(step) : step));
-    const blocks = [
-      ...before,
-      ...after,
-      ...items.filter((item): item is PendingBlock => "lines" in item),
-    ];
-    const width = Math.max(0, ...blocks.map((block) => block.width));
+  axisWidths(steps: readonly Step[], terminals: readonly PendingBlock[] = []): AxisWidths {
+    let otherWidth = Math.max(0, ...terminals.map((block) => block.width));
+    let processWidth = 0;
+    let hasData = false;
+    for (const step of axisSteps(steps)) {
+      if (!isSimple(step)) continue;
+      const block = this.pending(step);
+      if (block.kind === "data") {
+        hasData = true;
+        otherWidth = Math.max(otherWidth, block.width);
+      } else {
+        processWidth = Math.max(processWidth, block.width);
+      }
+    }
+    const ratio = hasData ? processToDataWidthRatio : 1;
+    const width = Math.max(otherWidth, processWidth / ratio);
+    return { id: this.#nextAxisId++, process: width * ratio, other: width };
+  }
+
+  /** Ветки «да» и тела циклов используют размеры той же вертикальной оси. */
+  column(
+    steps: readonly Step[],
+    widths: AxisWidths,
+    before: readonly PendingBlock[] = [],
+    after: readonly PendingBlock[] = [],
+  ): Box {
     const build = (block: PendingBlock) =>
-      this.shapeBox(block.kind, width, block.height, block.lines, block.extra);
+      this.shapeBox(
+        block.kind,
+        block.kind === "process" ? widths.process : widths.other,
+        block.height,
+        block.lines,
+        { ...block.extra, axisId: widths.id },
+      );
     return this.sequence([
       ...before.map(build),
-      ...items.map((item) => ("lines" in item ? build(item) : this.compound(item))),
+      ...steps.map((step) =>
+        isSimple(step) ? build(this.pending(step)) : this.compound(step, widths),
+      ),
       ...after.map(build),
     ]);
   }
 
-  compound(step: Extract<Step, { kind: "if" | "while" }>): Box {
+  compound(step: DecisionStep, widths: AxisWidths): Box {
     return step.kind === "if"
-      ? this.ifBox(step.condition, step.line, this.column(step.then), this.column(step.else))
-      : this.whileBox(step.condition, step.line, this.column(step.body));
+      ? this.ifBox(
+          step,
+          this.column(step.then, widths),
+          this.column(step.else, this.axisWidths(step.else)),
+        )
+      : this.whileBox(step, this.column(step.body, widths));
   }
 
-  decision(condition: Text, sourceLine: number): Box {
-    const { style, rules } = this.options;
-    const lines = symbolLines("decision", condition, style, rules);
-    const size = decisionSize(lines, style, rules);
-    return this.shapeBox("decision", size.width, size.height, lines, { dashed: false, sourceLine });
+  decision(step: DecisionStep): Box {
+    return this.shapeBox(
+      "decision",
+      decisionRatio * this.decisionHeight,
+      this.decisionHeight,
+      this.linesFor(step),
+      { dashed: false, sourceLine: step.line },
+    );
   }
 
-  ifBox(condition: Text, sourceLine: number, yes: Box, no: Box): Box {
+  ifBox(stepAtDecision: DecisionStep, yes: Box, no: Box): Box {
     const { gap, side, step } = this.options;
-    const result = this.decision(condition, sourceLine);
+    const result = this.decision(stepAtDecision);
     const decision = result.shapes[0];
     if (!decision) throw new Error("нет ромба");
     const half = decision.width / 2;
@@ -425,9 +490,9 @@ class Layout {
     return result;
   }
 
-  whileBox(condition: Text, sourceLine: number, body: Box): Box {
+  whileBox(stepAtDecision: DecisionStep, body: Box): Box {
     const { gap, side, step } = this.options;
-    const symbol = this.decision(condition, sourceLine);
+    const symbol = this.decision(stepAtDecision);
     const decision = symbol.shapes[0];
     if (!decision) throw new Error("нет ромба");
     const half = decision.width / 2;
@@ -523,11 +588,10 @@ class Layout {
 
   program(program: Program): Drawing {
     const { margin, arrowRule, style, rules, strokeWidth, labelScale } = this.options;
-    const box = this.column(
-      program.body,
-      [this.terminator("Начало", "start")],
-      [this.terminator("Конец", "end")],
-    );
+    const start = this.terminator("Начало", "start");
+    const end = this.terminator("Конец", "end");
+    const widths = this.axisWidths(program.body, [start, end]);
+    const box = this.column(program.body, widths, [start], [end]);
     const dx = margin - box.minX;
     const dy = margin;
     const moved = emptyBox();
@@ -548,5 +612,14 @@ class Layout {
 
 /** Чертёж программы. Одинаковая структура даёт одинаковый чертёж. */
 export function layout(program: Program, options: Partial<LayoutOptions> = {}): Drawing {
-  return new Layout({ ...defaultLayoutOptions, ...options }, program).program(program);
+  const scale = (options.style?.size ?? k) / k;
+  return new Layout(
+    {
+      ...defaultLayoutOptions,
+      gap: defaultLayoutOptions.gap * scale,
+      exitGap: defaultLayoutOptions.exitGap * scale,
+      ...options,
+    },
+    program,
+  ).program(program);
 }

@@ -1,4 +1,4 @@
-// Проверка чертежа по правилам ГОСТ 19.701-90 и вида схемы (design, решения 14 и 19). Позже — функция продукта.
+// Проверка чертежа по правилам ГОСТ 19.701-90 и вида схемы (design, решения 14, 19–21). Позже — функция продукта.
 import {
   arrowOnLeftOrUp,
   arrowsOf,
@@ -8,7 +8,7 @@ import {
   type Point,
   type Shape,
 } from "./drawing.ts";
-import { textFits, type SymbolKind } from "./symbols.ts";
+import { decisionRatio, processToDataWidthRatio, textFits, type SymbolKind } from "./symbols.ts";
 
 export type GostRule =
   | "allowed-symbol"
@@ -43,6 +43,19 @@ const epsilon = 0.001;
 const near = (a: number, b: number) => Math.abs(a - b) < epsilon;
 
 const lineName = (index: number) => `line ${index + 1}`;
+const centerX = (shape: Shape) => shape.x + shape.width / 2;
+
+/** Оси старых чертежей можно восстановить по вертикальным соединениям между блоками. */
+function connectedAxes(lines: readonly FlowLine[]): Map<string, number> {
+  const axes = new Map<string, number>();
+  for (const line of lines) {
+    const [start, end] = line.points;
+    if (line.points.length !== 2 || !start || !end || !near(start.x, end.x)) continue;
+    if (line.from !== undefined) axes.set(line.from, start.x);
+    if (line.to !== undefined) axes.set(line.to, start.x);
+  }
+  return axes;
+}
 
 function segments(line: FlowLine): [Point, Point][] {
   return line.points.slice(1).map((point, i): [Point, Point] => [line.points[i] ?? point, point]);
@@ -74,6 +87,9 @@ export function gostCheck(
   const violations: GostViolation[] = [];
   const add = (rule: GostRule, target: string, message: string) =>
     violations.push({ rule, target, message });
+  const firstDecision = drawing.shapes.find((shape) => shape.kind === "decision");
+  const columns = new Map<string, Shape[]>();
+  const legacyAxes = connectedAxes(drawing.lines);
 
   for (const shape of drawing.shapes) {
     if (!allowedSymbols.has(shape.kind)) {
@@ -83,7 +99,10 @@ export function gostCheck(
     const { rules } = drawing;
     const sizeOk =
       shape.kind === "decision"
-        ? near(shape.width, 2 * shape.height) && shape.height >= rules.decisionMinHeight - epsilon
+        ? near(shape.width, decisionRatio * shape.height) &&
+          shape.height >= rules.decisionMinHeight - epsilon &&
+          near(shape.width, firstDecision?.width ?? shape.width) &&
+          near(shape.height, firstDecision?.height ?? shape.height)
         : shape.width >= rules.minWidth - epsilon;
     if (!sizeOk) {
       add("symbol-size", shape.id, `Размер ${shape.width}×${shape.height} не по правилам вида`);
@@ -100,6 +119,14 @@ export function gostCheck(
           `У ромба выходы [${labels.join(", ")}], нужны «да» и «нет»`,
         );
       }
+    } else {
+      const axis =
+        shape.axisId === undefined
+          ? `x:${(legacyAxes.get(shape.id) ?? centerX(shape)).toFixed(3)}`
+          : `axis:${shape.axisId}`;
+      const column = columns.get(axis);
+      if (column) column.push(shape);
+      else columns.set(axis, [shape]);
     }
     if (shape.role !== "start" && entries.length === 0)
       add("has-entry", shape.id, "У фигуры нет входа");
@@ -122,15 +149,15 @@ export function gostCheck(
     }
   }
 
-  // Соседние блоки одной оси (прямая вертикальная линия между ними) — одной ширины.
-  const byId = new Map(drawing.shapes.map((shape) => [shape.id, shape]));
-  for (const line of drawing.lines) {
-    const [from, to] = [byId.get(line.from ?? ""), byId.get(line.to ?? "")];
-    const straight =
-      line.points.length === 2 && near(line.points[0]?.x ?? 0, line.points[1]?.x ?? 1);
-    if (from && to && straight && from.kind !== "decision" && to.kind !== "decision") {
-      if (!near(from.width, to.width)) {
-        add("column-width", to.id, `Ширина ${to.width} мм, у блока выше ${from.width} мм`);
+  for (const column of columns.values()) {
+    const data = column.find((shape) => shape.kind === "data");
+    const reference = data ?? column[0];
+    if (!reference) continue;
+    for (const shape of column) {
+      const expected =
+        data && shape.kind === "process" ? data.width * processToDataWidthRatio : reference.width;
+      if (!near(shape.width, expected) || !near(centerX(shape), centerX(reference))) {
+        add("column-width", shape.id, "Края блока не выровнены по фигурам на общей оси");
       }
     }
   }

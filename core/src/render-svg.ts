@@ -26,7 +26,7 @@ function outline(shape: Shape): SvgNode {
     case "process":
       return el("rect", { x, y, width: w, height: h, ...dashed });
     case "data": {
-      const s = dataSkew(shape.height);
+      const s = dataSkew(w);
       return el("polygon", {
         points: points([
           { x: x + s, y },

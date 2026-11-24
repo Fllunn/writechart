@@ -1,7 +1,9 @@
 import { describe, expect, test } from "vitest";
 import type { Drawing, FlowLine, Point, Shape } from "./drawing.ts";
+import { gostCheck } from "./gost-check.ts";
 import { convertPython } from "./languages/python.ts";
-import { layout, type LayoutOptions } from "./layout.ts";
+import { defaultLayoutOptions, layout, type LayoutOptions } from "./layout.ts";
+import { textFits } from "./symbols.ts";
 import { parsePython } from "./test-support/parse-python.ts";
 
 async function drawingOf(code: string, options?: Partial<LayoutOptions>): Promise<Drawing> {
@@ -60,9 +62,12 @@ describe("последовательность", () => {
     expect(drawing.shapes.map(shapeText)).toEqual(["Начало", "Конец"]);
     expect(drawing.lines).toHaveLength(1);
     const start = shape(drawing, "Начало");
+    const end = shape(drawing, "Конец");
+    expect(start.height).toBeCloseTo(5 * 3.5);
+    expect(end.height).toBeCloseTo(5 * 3.5);
     expect(drawing.lines[0]).toMatchObject({
       from: start.id,
-      to: shape(drawing, "Конец").id,
+      to: end.id,
       arrows: [],
     });
   });
@@ -75,18 +80,53 @@ describe("последовательность", () => {
     expect(line?.to).toBe(shape(drawing, "y = 2").id);
   });
 
-  test("фигуры стоят на одной оси, между ними 1,2 кегля", async () => {
+  test("фигуры стоят на одной оси, между ними 1,4 кегля", async () => {
     const drawing = await drawingOf("x = 1\ny = 2");
     const [a, b] = [shape(drawing, "x = 1"), shape(drawing, "y = 2")];
     expect(centerX(a)).toBe(centerX(b));
-    expect(b.y - bottom(a)).toBeCloseTo(1.2 * 3.5);
+    expect(b.y - bottom(a)).toBeCloseTo(1.4 * 3.5);
   });
 
-  test("колонка одной ширины: блоки и терминаторы одной оси — по самому широкому", async () => {
+  test("вертикальные промежутки масштабируются с кеглем", async () => {
+    const style = { ...defaultLayoutOptions.style, size: 4 };
+    const drawing = await drawingOf("x = 1\nx = 2\nif x > 0:\n    x = 3", { style });
+    expect(shape(drawing, "x = 2").y - bottom(shape(drawing, "x = 1"))).toBeCloseTo(1.4 * 4);
+    expect(shape(drawing, "x = 3").y - bottom(shape(drawing, "x > 0"))).toBeCloseTo(3.4 * 4);
+  });
+
+  test("прямоугольники на оси ввода и вывода выровнены по серединам скосов", async () => {
     const drawing = await drawingOf(
-      'n = int(input())\ns = 0\nprint("Сумма элементов массива:", s)',
+      "n = int(input())\ns = 0\nwhile n > 0:\n    s += n\n    n -= 1\nprint(s)",
     );
-    const widths = drawing.shapes.map((s) => s.width);
+    const input = shape(drawing, "Ввод n");
+    const halfSkew = (0.23 * input.width) / 2;
+    for (const text of ["s = 0", "s = s + n", "n = n - 1"]) {
+      const block = shape(drawing, text);
+      expect(block.x).toBeCloseTo(input.x + halfSkew);
+      expect(right(block)).toBeCloseTo(right(input) - halfSkew);
+    }
+    expect(shape(drawing, "Вывод: s").width).toBe(input.width);
+    expect(shape(drawing, "Начало").width).toBe(input.width);
+  });
+
+  test("длинный текст в прямоугольнике расширяет параллелограмм на той же оси", async () => {
+    const short = await drawingOf("n = int(input())\nx = n");
+    const drawing = await drawingOf(
+      "n = int(input())\nwhile n > 0:\n    very_long_total_name = count_value + next_count_value",
+    );
+    const input = shape(drawing, "Ввод n");
+    const block = drawing.shapes.find((candidate) => candidate.kind === "process");
+    if (!block) throw new Error("нет прямоугольника");
+    expect(input.width).toBeGreaterThan(shape(short, "Ввод n").width);
+    expect(block.width).toBeCloseTo(0.77 * input.width);
+    expect(
+      textFits(block.kind, block.width, block.height, block.lines, drawing.style, drawing.rules),
+    ).toBe(true);
+  });
+
+  test("ось без параллелограмма получает общую ширину по самому широкому блоку", async () => {
+    const drawing = await drawingOf("x = 1\ny = very_long_total_name + next_count_value");
+    const widths = drawing.shapes.map((block) => block.width);
     expect(new Set(widths).size).toBe(1);
     expect(widths[0]).toBeGreaterThan(drawing.rules.minWidth);
   });
@@ -111,7 +151,7 @@ describe("ветвление", () => {
     const body = shape(drawing, "Вывод: x");
     expect(decision.kind).toBe("decision");
     expect(centerX(body)).toBe(centerX(decision));
-    expect(body.y).toBeGreaterThan(bottom(decision));
+    expect(body.y - bottom(decision)).toBeCloseTo(3.4 * 3.5);
     const yes = exit(drawing, decision, "да");
     expect(yes.points[0]).toEqual({ x: centerX(decision), y: bottom(decision) });
     expect(yes.to).toBe(body.id);
@@ -155,6 +195,52 @@ describe("ветвление", () => {
     expect(yes && yes.y > bottom(decision) && Math.abs(yes.x - centerX(decision)) < 3).toBe(true);
     expect(no && no.x >= right(decision) && no.y < centerY(decision)).toBe(true);
   });
+
+  test("короткие условия дают одинаковые ромбы минимального размера", async () => {
+    const drawing = await drawingOf("if a:\n    x = 1\nelse:\n    if b:\n        x = 2");
+    const diamonds = drawing.shapes.filter((item) => item.kind === "decision");
+    expect(diamonds).toHaveLength(2);
+    for (const diamond of diamonds) {
+      expect(diamond.width).toBeCloseTo(9.3 * 3.5);
+      expect(diamond.height).toBeCloseTo(5 * 3.5);
+    }
+  });
+
+  test("условия стартового примера дают ромбы 37,24 × 20,02 мм", async () => {
+    const drawing = await drawingOf(
+      "while i <= n:\n    if i % 2 == 0:\n        s += i\n    i += 1",
+    );
+    const diamonds = drawing.shapes.filter((item) => item.kind === "decision");
+    expect(diamonds).toHaveLength(2);
+    for (const diamond of diamonds) {
+      expect(diamond.width).toBeCloseTo(37.24);
+      expect(diamond.height).toBeCloseTo(20.02);
+    }
+    expect(gostCheck(drawing)).toEqual([]);
+  });
+
+  test("длинное условие в боковой ветке увеличивает все ромбы схемы", async () => {
+    const drawing = await drawingOf(
+      "while a:\n    if b:\n        x = 1\n    else:\n        if average_temperature > maximum_allowed_temperature:\n            x = 2",
+    );
+    const diamonds = drawing.shapes.filter((item) => item.kind === "decision");
+    expect(diamonds).toHaveLength(3);
+    expect(new Set(diamonds.map((item) => item.width)).size).toBe(1);
+    expect(new Set(diamonds.map((item) => item.height)).size).toBe(1);
+    for (const diamond of diamonds) {
+      expect(diamond.height).toBeGreaterThan(5 * 3.5);
+      expect(
+        textFits(
+          diamond.kind,
+          diamond.width,
+          diamond.height,
+          diamond.lines,
+          drawing.style,
+          drawing.rules,
+        ),
+      ).toBe(true);
+    }
+  });
 });
 
 describe("цикл while", () => {
@@ -163,6 +249,7 @@ describe("цикл while", () => {
     const decision = shape(drawing, "i ≤ n");
     const body = shape(drawing, "i = i + 1");
     expect(centerX(body)).toBe(centerX(decision));
+    expect(body.y - bottom(decision)).toBeCloseTo(3.4 * 3.5);
     expect(exit(drawing, decision, "да").to).toBe(body.id);
 
     const back = exitsOf(drawing, body)[0];

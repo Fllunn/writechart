@@ -54,11 +54,21 @@ describe("находит каждое правило на испорченном
     );
   });
 
-  test("ромб не 2 : 1", async () => {
+  test("ромб с прежней пропорцией 2 : 1 отклоняется", async () => {
     const drawing = await base;
     const spoiled = mapShape(drawing, decisionIndex(drawing), (shape) => ({
       ...shape,
-      width: shape.width + 5,
+      width: 2 * shape.height,
+    }));
+    expect(rules(spoiled)).toContain("symbol-size");
+  });
+
+  test("ромбы разного размера отклоняются при правильной пропорции", async () => {
+    const drawing = await base;
+    const spoiled = mapShape(drawing, decisionIndex(drawing), (shape) => ({
+      ...shape,
+      width: shape.width * 1.25,
+      height: shape.height * 1.25,
     }));
     expect(rules(spoiled)).toContain("symbol-size");
   });

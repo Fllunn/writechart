@@ -9,6 +9,8 @@ export interface Point {
 export interface Shape {
   readonly id: string;
   readonly kind: SymbolKind;
+  /** Вертикальная ось, по которой согласованы ширины прямоугольников, данных и терминаторов. */
+  readonly axisId?: number;
   /** Левый верхний угол описанного прямоугольника, мм. */
   readonly x: number;
   readonly y: number;

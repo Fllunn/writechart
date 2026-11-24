@@ -1,4 +1,4 @@
-// Размеры символов от текста (design, решение 19) и перенос строк.
+// Размеры символов от текста (design, решения 19 и 20) и перенос строк.
 import { textWidth, type FontMetrics } from "./fonts/font-metrics.ts";
 import type { Text } from "./structure.ts";
 import { showDirectionMarks } from "./svg-builder.ts";
@@ -27,22 +27,22 @@ export interface SymbolRules {
   readonly blockMinHeight: number;
   /** Наименьшая высота терминатора. */
   readonly terminatorMinHeight: number;
-  /** Наименьшая высота ромба (ширина — вдвое больше). */
+  /** Наименьшая высота ромба. */
   readonly decisionMinHeight: number;
   /** Поле между текстом и краем внутренней области по горизонтали и по вертикали. */
   readonly paddingX: number;
   readonly paddingY: number;
 }
 
-/** Правила по замеру схем человека (design, решение 19), кегль `k` мм. */
+/** Правила по замеру схем человека (design, решения 19 и 20), кегль `k` мм. */
 export function symbolRules(k: number): SymbolRules {
   return {
     minWidth: 10.3 * k,
     maxLineWidth: 20 * k,
     decisionMaxLineWidth: 10 * k,
-    blockMinHeight: 3.7 * k,
-    terminatorMinHeight: 3.2 * k,
-    decisionMinHeight: 4.5 * k,
+    blockMinHeight: (40 / 12) * k,
+    terminatorMinHeight: 5 * k,
+    decisionMinHeight: 5 * k,
     paddingX: 1.15 * k,
     paddingY: 0.45 * k,
   };
@@ -56,8 +56,13 @@ export interface LinePart {
 
 export type TextLine = readonly LinePart[];
 
+const dataSkewRatio = 0.23;
+
+/** Ширина прямоугольника между серединами наклонных сторон параллелограмма. */
+export const processToDataWidthRatio = 1 - dataSkewRatio;
+
 /** Скос параллелограмма «Данные» по горизонтали. */
-export const dataSkew = (height: number) => height / 4;
+export const dataSkew = (width: number) => dataSkewRatio * width;
 
 /** Внутренняя область символа, куда помещается текст (без полей). */
 export function innerArea(
@@ -69,7 +74,7 @@ export function innerArea(
     case "process":
       return { width, height };
     case "data":
-      return { width: width - 2 * dataSkew(height), height };
+      return { width: width - 2 * dataSkew(width), height };
     case "decision":
       return { width: width / 2, height: height / 2 };
     case "terminator":
@@ -84,6 +89,9 @@ export function lineWidth(line: TextLine, style: TextStyle): number {
   return line.reduce((sum, part) => sum + partWidth(part, style), 0);
 }
 
+/** Боковое поле ромба (design, решение 22), мм. */
+const decisionPaddingX = (fontSize: number) => 0.35 * fontSize;
+
 /** Текст помещается во внутреннюю область с полями. */
 export function textFits(
   kind: SymbolKind,
@@ -95,9 +103,10 @@ export function textFits(
 ): boolean {
   const inner = innerArea(kind, width, height);
   const epsilon = 0.001;
+  const paddingX = kind === "decision" ? decisionPaddingX(style.size) : rules.paddingX;
   return (
     lines.length * style.lineHeight + 2 * rules.paddingY <= inner.height + epsilon &&
-    lines.every((line) => lineWidth(line, style) + 2 * rules.paddingX <= inner.width + epsilon)
+    lines.every((line) => lineWidth(line, style) + 2 * paddingX <= inner.width + epsilon)
   );
 }
 
@@ -255,18 +264,23 @@ export function blockWidth(
   rules: SymbolRules,
 ): number {
   const text = textBlockWidth(lines, style) + 2 * rules.paddingX;
-  const extra = kind === "data" ? 2 * dataSkew(height) : kind === "terminator" ? height / 2 : 0;
+  if (kind === "data") {
+    return Math.max(rules.minWidth, text / (1 - 2 * dataSkewRatio));
+  }
+  const extra = kind === "terminator" ? height / 2 : 0;
   return Math.max(rules.minWidth, text + extra);
 }
 
-/** Ромб 2 : 1: текст — во вписанном прямоугольнике (половина ширины × половина высоты). */
+export const decisionRatio = 1.86;
+
+/** Текст ромба — во вписанном прямоугольнике, занимающем половину ширины и высоты. */
 export function decisionSize(
   lines: readonly TextLine[],
   style: TextStyle,
   rules: SymbolRules,
 ): { width: number; height: number } {
-  const textW = textBlockWidth(lines, style) + 2 * rules.paddingX;
+  const textW = textBlockWidth(lines, style) + 2 * decisionPaddingX(style.size);
   const textH = lines.length * style.lineHeight + 2 * rules.paddingY;
-  const height = Math.max(rules.decisionMinHeight, textW, 2 * textH);
-  return { width: 2 * height, height };
+  const height = Math.max(rules.decisionMinHeight, (2 * textW) / decisionRatio, 2 * textH);
+  return { width: decisionRatio * height, height };
 }

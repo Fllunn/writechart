@@ -4,6 +4,7 @@ import { joinText } from "./notation.ts";
 import {
   blockHeight,
   blockWidth,
+  dataSkew,
   decisionSize,
   lineWidth,
   symbolLines,
@@ -48,25 +49,27 @@ describe("размеры символов подстраиваются под т
       expect(lineWidth(line, style)).toBeLessThanOrEqual(rules.maxLineWidth);
   });
 
-  test("высота растёт по числу строк, две строки — в пределах минимума", () => {
-    expect(blockHeight([[], []], style, rules)).toBe(rules.blockMinHeight);
-    expect(blockHeight([[], [], [], []], style, rules)).toBeGreaterThan(rules.blockMinHeight);
+  test("минимальная высота блоков — 40 px, многострочный текст увеличивает её", () => {
+    expect(blockHeight([[]], style, rules)).toBeCloseTo((40 / 12) * k);
+    expect(blockHeight([[], []], style, rules)).toBeGreaterThan(rules.blockMinHeight);
   });
 
-  test("параллелограмм шире прямоугольника на скосы", () => {
+  test("скос параллелограмма занимает 23 % ширины, текст помещается", () => {
     const lines = symbolLines("data", joinText("Вывод: «Сумма цифр числа:», s"), style, rules);
     const h = rules.blockMinHeight;
-    expect(blockWidth("data", lines, h, style, rules)).toBeCloseTo(
-      blockWidth("process", lines, h, style, rules) + h / 2,
+    const width = blockWidth("data", lines, h, style, rules);
+    expect(dataSkew(100)).toBeCloseTo(23);
+    expect(width).toBeCloseTo(
+      (Math.max(...lines.map((line) => lineWidth(line, style))) + 2 * rules.paddingX) / 0.54,
     );
+    expect(textFits("data", width, h, lines, style, rules)).toBe(true);
   });
 
-  test("ромб вдвое шире высоты, не меньше минимума; текст помещается", () => {
+  test("ромб имеет пропорцию 1,86 : 1 и растёт по тексту", () => {
     const short = symbolLines("decision", joinText("i ≤ n"), style, rules);
-    expect(decisionSize(short, style, rules)).toEqual({
-      width: 2 * rules.decisionMinHeight,
-      height: rules.decisionMinHeight,
-    });
+    const minimum = decisionSize(short, style, rules);
+    expect(minimum.width).toBeCloseTo(9.3 * k);
+    expect(minimum.height).toBeCloseTo(5 * k);
 
     const long = symbolLines(
       "decision",
@@ -76,7 +79,7 @@ describe("размеры символов подстраиваются под т
     );
     expect(long.length).toBeGreaterThan(1);
     const size = decisionSize(long, style, rules);
-    expect(size.width).toBe(2 * size.height);
+    expect(size.width).toBeCloseTo(1.86 * size.height);
     expect(textFits("decision", size.width, size.height, long, style, rules)).toBe(true);
   });
 
