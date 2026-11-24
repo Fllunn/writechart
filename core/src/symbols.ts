@@ -23,10 +23,8 @@ export interface SymbolRules {
   readonly maxLineWidth: number;
   /** То же внутри ромба. */
   readonly decisionMaxLineWidth: number;
-  /** Наименьшая высота процесса и данных. */
+  /** Наименьшая высота процесса, данных и терминатора. */
   readonly blockMinHeight: number;
-  /** Наименьшая высота терминатора. */
-  readonly terminatorMinHeight: number;
   /** Наименьшая высота ромба. */
   readonly decisionMinHeight: number;
   /** Поле между текстом и краем внутренней области по горизонтали и по вертикали. */
@@ -41,7 +39,6 @@ export function symbolRules(k: number): SymbolRules {
     maxLineWidth: 20 * k,
     decisionMaxLineWidth: 10 * k,
     blockMinHeight: (40 / 12) * k,
-    terminatorMinHeight: 5 * k,
     decisionMinHeight: 5 * k,
     paddingX: 1.15 * k,
     paddingY: 0.45 * k,
@@ -237,22 +234,13 @@ export function symbolLines(
   );
 }
 
-/** Высота процесса или данных, нужная строкам. */
+/** Высота процесса, данных или терминатора, нужная строкам. */
 export function blockHeight(
   lines: readonly TextLine[],
   style: TextStyle,
   rules: SymbolRules,
 ): number {
   return Math.max(rules.blockMinHeight, lines.length * style.lineHeight + 2 * rules.paddingY);
-}
-
-/** Высота терминатора, нужная строкам. */
-export function terminatorHeight(
-  lines: readonly TextLine[],
-  style: TextStyle,
-  rules: SymbolRules,
-): number {
-  return Math.max(rules.terminatorMinHeight, lines.length * style.lineHeight + 2 * rules.paddingY);
 }
 
 /** Ширина процесса, данных или терминатора заданной высоты, нужная строкам (не меньше минимума). */
@@ -267,8 +255,10 @@ export function blockWidth(
   if (kind === "data") {
     return Math.max(rules.minWidth, text / (1 - 2 * dataSkewRatio));
   }
-  const extra = kind === "terminator" ? height / 2 : 0;
-  return Math.max(rules.minWidth, text + extra);
+  if (kind === "terminator") {
+    return Math.max(rules.minWidth, height, text + height / 2);
+  }
+  return Math.max(rules.minWidth, text);
 }
 
 export const decisionRatio = 1.86;

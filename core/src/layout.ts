@@ -22,7 +22,6 @@ import {
   processToDataWidthRatio,
   symbolLines,
   symbolRules,
-  terminatorHeight,
   type SymbolKind,
   type SymbolRules,
   type TextLine,
@@ -176,8 +175,8 @@ interface PendingBlock {
 
 interface AxisWidths {
   readonly id: number;
-  readonly process: number;
-  readonly other: number;
+  readonly processAndTerminator: number;
+  readonly data: number;
 }
 
 class Layout {
@@ -185,15 +184,21 @@ class Layout {
   #nextAxisId = 1;
   readonly #lines = new Map<Step, readonly TextLine[]>();
   readonly #blocks = new Map<SimpleStep, PendingBlock>();
+  readonly #terminators: readonly [PendingBlock, PendingBlock];
   readonly options: LayoutOptions;
-  /** Высота всех процессов и данных схемы — по самому высокому. */
+  /** Общая высота процессов, данных и терминаторов. */
   readonly blockHeight: number;
   readonly decisionHeight: number;
 
   constructor(options: LayoutOptions, program: Program) {
     this.options = options;
     const { style, rules } = options;
-    let maxBlockHeight = rules.blockMinHeight;
+    const startLines = symbolLines("terminator", joinText("Начало"), style, rules);
+    const endLines = symbolLines("terminator", joinText("Конец"), style, rules);
+    let maxBlockHeight = Math.max(
+      blockHeight(startLines, style, rules),
+      blockHeight(endLines, style, rules),
+    );
     let maxDecisionHeight = rules.decisionMinHeight;
     for (const step of allSteps(program.body)) {
       if (isSimple(step)) {
@@ -208,6 +213,7 @@ class Layout {
     }
     this.blockHeight = maxBlockHeight;
     this.decisionHeight = maxDecisionHeight;
+    this.#terminators = [this.terminator(startLines, "start"), this.terminator(endLines, "end")];
   }
 
   linesFor(step: Step): readonly TextLine[] {
@@ -233,15 +239,13 @@ class Layout {
     return block;
   }
 
-  terminator(text: string, role: "start" | "end"): PendingBlock {
+  terminator(lines: readonly TextLine[], role: "start" | "end"): PendingBlock {
     const { style, rules } = this.options;
-    const lines = symbolLines("terminator", joinText(text), style, rules);
-    const height = terminatorHeight(lines, style, rules);
     return {
       kind: "terminator",
       lines,
-      height,
-      width: blockWidth("terminator", lines, height, style, rules),
+      height: this.blockHeight,
+      width: blockWidth("terminator", lines, this.blockHeight, style, rules),
       extra: { dashed: false, role },
     };
   }
@@ -324,22 +328,22 @@ class Layout {
   }
 
   axisWidths(steps: readonly Step[], terminals: readonly PendingBlock[] = []): AxisWidths {
-    let otherWidth = Math.max(0, ...terminals.map((block) => block.width));
-    let processWidth = 0;
+    let processAndTerminatorWidth = Math.max(0, ...terminals.map((block) => block.width));
+    let dataWidth = 0;
     let hasData = false;
     for (const step of axisSteps(steps)) {
       if (!isSimple(step)) continue;
       const block = this.pending(step);
       if (block.kind === "data") {
         hasData = true;
-        otherWidth = Math.max(otherWidth, block.width);
+        dataWidth = Math.max(dataWidth, block.width);
       } else {
-        processWidth = Math.max(processWidth, block.width);
+        processAndTerminatorWidth = Math.max(processAndTerminatorWidth, block.width);
       }
     }
     const ratio = hasData ? processToDataWidthRatio : 1;
-    const width = Math.max(otherWidth, processWidth / ratio);
-    return { id: this.#nextAxisId++, process: width * ratio, other: width };
+    const width = Math.max(dataWidth, processAndTerminatorWidth / ratio);
+    return { id: this.#nextAxisId++, processAndTerminator: width * ratio, data: width };
   }
 
   /** Ветки «да» и тела циклов используют размеры той же вертикальной оси. */
@@ -352,7 +356,7 @@ class Layout {
     const build = (block: PendingBlock) =>
       this.shapeBox(
         block.kind,
-        block.kind === "process" ? widths.process : widths.other,
+        block.kind === "data" ? widths.data : widths.processAndTerminator,
         block.height,
         block.lines,
         { ...block.extra, axisId: widths.id },
@@ -588,9 +592,8 @@ class Layout {
 
   program(program: Program): Drawing {
     const { margin, arrowRule, style, rules, strokeWidth, labelScale } = this.options;
-    const start = this.terminator("Начало", "start");
-    const end = this.terminator("Конец", "end");
-    const widths = this.axisWidths(program.body, [start, end]);
+    const [start, end] = this.#terminators;
+    const widths = this.axisWidths(program.body, this.#terminators);
     const box = this.column(program.body, widths, [start], [end]);
     const dx = margin - box.minX;
     const dy = margin;

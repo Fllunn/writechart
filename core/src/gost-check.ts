@@ -103,7 +103,9 @@ export function gostCheck(
           shape.height >= rules.decisionMinHeight - epsilon &&
           near(shape.width, firstDecision?.width ?? shape.width) &&
           near(shape.height, firstDecision?.height ?? shape.height)
-        : shape.width >= rules.minWidth - epsilon;
+        : shape.width >= rules.minWidth - epsilon &&
+          shape.height >= rules.blockMinHeight - epsilon &&
+          (shape.kind !== "terminator" || shape.width >= shape.height - epsilon);
     if (!sizeOk) {
       add("symbol-size", shape.id, `Размер ${shape.width}×${shape.height} не по правилам вида`);
     }
@@ -138,9 +140,9 @@ export function gostCheck(
     }
   }
 
-  // Процессы и данные — одной высоты на всю схему.
+  // Процессы, данные и терминаторы — одной высоты на всю схему.
   const blocks = drawing.shapes.filter(
-    (shape) => shape.kind === "process" || shape.kind === "data",
+    (shape) => shape.kind !== "decision" && allowedSymbols.has(shape.kind),
   );
   const height = blocks[0]?.height;
   for (const shape of blocks) {
@@ -155,7 +157,7 @@ export function gostCheck(
     if (!reference) continue;
     for (const shape of column) {
       const expected =
-        data && shape.kind === "process" ? data.width * processToDataWidthRatio : reference.width;
+        data && shape.kind !== "data" ? data.width * processToDataWidthRatio : reference.width;
       if (!near(shape.width, expected) || !near(centerX(shape), centerX(reference))) {
         add("column-width", shape.id, "Края блока не выровнены по фигурам на общей оси");
       }

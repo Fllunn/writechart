@@ -63,8 +63,8 @@ describe("последовательность", () => {
     expect(drawing.lines).toHaveLength(1);
     const start = shape(drawing, "Начало");
     const end = shape(drawing, "Конец");
-    expect(start.height).toBeCloseTo(5 * 3.5);
-    expect(end.height).toBeCloseTo(5 * 3.5);
+    expect(start.height).toBeCloseTo((40 / 12) * 3.5);
+    expect(end.height).toBe(start.height);
     expect(drawing.lines[0]).toMatchObject({
       from: start.id,
       to: end.id,
@@ -106,7 +106,32 @@ describe("последовательность", () => {
       expect(right(block)).toBeCloseTo(right(input) - halfSkew);
     }
     expect(shape(drawing, "Вывод: s").width).toBe(input.width);
-    expect(shape(drawing, "Начало").width).toBe(input.width);
+    expect(shape(drawing, "Начало").width).toBeCloseTo(0.77 * input.width);
+    expect(shape(drawing, "Конец").width).toBeCloseTo(0.77 * input.width);
+  });
+
+  test("на стартовой оси терминаторы имеют размер 70,03 × 11,67 мм", async () => {
+    const drawing = await drawingOf('n = int(input())\ns = 0\nprint("Сумма чётных:", s)');
+    const process = shape(drawing, "s = 0");
+    for (const title of ["Начало", "Конец"]) {
+      const terminal = shape(drawing, title);
+      expect(terminal.width).toBeCloseTo(70.03);
+      expect(terminal.height).toBeCloseTo(11.67);
+      expect(terminal.x).toBeCloseTo(process.x);
+      expect(terminal.width).toBe(process.width);
+      expect(terminal.height).toBe(process.height);
+    }
+  });
+
+  test("терминаторы выровнены по скосам, когда на оси только ввод", async () => {
+    const drawing = await drawingOf("n = int(input())");
+    const input = shape(drawing, "Ввод n");
+    for (const title of ["Начало", "Конец"]) {
+      const terminal = shape(drawing, title);
+      expect(terminal.width).toBeCloseTo(0.77 * input.width);
+      expect(terminal.height).toBe(input.height);
+    }
+    expect(gostCheck(drawing)).toEqual([]);
   });
 
   test("длинный текст в прямоугольнике расширяет параллелограмм на той же оси", async () => {
@@ -131,10 +156,15 @@ describe("последовательность", () => {
     expect(widths[0]).toBeGreaterThan(drawing.rules.minWidth);
   });
 
-  test("процессы и данные одной высоты во всей схеме", async () => {
-    const drawing = await drawingOf("x = 1\nif x:\n    print(x)\nelse:\n    y = 2");
-    const blocks = drawing.shapes.filter((s) => s.kind === "process" || s.kind === "data");
-    expect(new Set(blocks.map((s) => s.height)).size).toBe(1);
+  test("длинный текст в боковой ветке увеличивает общую высоту блоков и терминаторов", async () => {
+    const drawing = await drawingOf(
+      'x = 1\nif x:\n    print(x)\nelse:\n    print("Длинная строка с пояснением результатов вычисления, которая переносится на несколько строк")',
+    );
+    const blocks = drawing.shapes.filter((s) => s.kind !== "decision");
+    const start = shape(drawing, "Начало");
+    expect(start.height).toBeGreaterThan((40 / 12) * 3.5);
+    expect(new Set(blocks.map((s) => s.height))).toEqual(new Set([start.height]));
+    expect(gostCheck(drawing)).toEqual([]);
   });
 
   test("левый верхний край схемы у поля", async () => {

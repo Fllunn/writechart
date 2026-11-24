@@ -83,6 +83,9 @@ describe("находит каждое правило на испорченном
     expect(
       rules(mapShape(await base, 1, (shape) => ({ ...shape, height: shape.height + 2 }))),
     ).toContain("block-height");
+    expect(
+      rules(mapShape(await base, 0, (shape) => ({ ...shape, height: shape.height + 2 }))),
+    ).toContain("block-height");
   });
 
   test("у ромба не два выхода «да» и «нет»", async () => {
