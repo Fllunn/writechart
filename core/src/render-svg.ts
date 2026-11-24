@@ -13,7 +13,6 @@ import {
 const ink = "#000";
 const paper = "#fff";
 const textInk = "#222";
-const labelInk = "#444";
 const dash = "2 1";
 
 const pointKey = (point: Point) => `${n(point.x)},${n(point.y)}`;
@@ -174,7 +173,7 @@ export function renderSvg(drawing: Drawing): string {
           ? [
               text(
                 drawing.labels.map((label) => el("text", { x: label.x, y: label.y }, [label.text])),
-                labelInk,
+                ink,
                 style.size * drawing.labelScale,
               ),
             ]

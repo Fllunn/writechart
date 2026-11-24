@@ -51,7 +51,10 @@ describe("flowchart", () => {
 
   test("в схеме текст «Начало», «Конец», «да», «нет»", async () => {
     const svg = await svgOf("if x > 0:\n    print(x)");
-    for (const text of [">Начало<", ">Конец<", ">да<", ">нет<"]) expect(svg).toContain(text);
+    for (const text of [">Начало<", ">Конец<"]) expect(svg).toContain(text);
+    expect(svg).toMatch(
+      /<g fill="#000" stroke="none" font-family="[^"]+" font-size="3\.21"><text [^>]*>да<\/text><text [^>]*>нет<\/text><\/g>/,
+    );
   });
 
   test("стрелка classic заканчивается у центра стыка, линия — у выреза", () => {

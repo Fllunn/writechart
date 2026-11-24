@@ -222,8 +222,13 @@ describe("ветвление", () => {
     ).toEqual(["да", "нет"]);
     const yes = drawing.labels.find((label) => label.text === "да");
     const no = drawing.labels.find((label) => label.text === "нет");
-    expect(yes && yes.y > bottom(decision) && Math.abs(yes.x - centerX(decision)) < 3).toBe(true);
-    expect(no && no.x >= right(decision) && no.y < centerY(decision)).toBe(true);
+    if (!yes || !no) throw new Error("нет подписей выходов ромба");
+    expect(drawing.labelScale).toBeCloseTo(11 / 12);
+    expect(yes.x).toBeGreaterThan(centerX(decision));
+    expect(yes.y).toBeGreaterThan(bottom(decision));
+    expect(yes.y).toBeLessThan(shape(drawing, "Вывод: x").y);
+    expect(no.x).toBeGreaterThan(right(decision));
+    expect(no.y).toBeLessThan(centerY(decision));
   });
 
   test("короткие условия дают одинаковые ромбы минимального размера", async () => {

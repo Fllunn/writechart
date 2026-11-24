@@ -61,7 +61,7 @@ export const defaultLayoutOptions: LayoutOptions = {
   step: 1.5 * k,
   margin: 1.5 * k,
   strokeWidth: k / 12,
-  labelScale: 0.85,
+  labelScale: 11 / 12,
   arrowRule: arrowOnLeftOrUp,
 };
 
