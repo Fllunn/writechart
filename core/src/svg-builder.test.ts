@@ -29,6 +29,15 @@ describe("строитель SVG", () => {
     expect(markup.match(/</g)).toHaveLength(2);
   });
 
+  test("stroke-miterlimit разрешён и его значение экранируется", () => {
+    expect(serialize(el("polygon", { "stroke-miterlimit": 10 }))).toBe(
+      '<polygon stroke-miterlimit="10"></polygon>',
+    );
+    expect(serialize(el("polygon", { "stroke-miterlimit": '10" fill="red' }))).toBe(
+      '<polygon stroke-miterlimit="10&quot; fill=&quot;red"></polygon>',
+    );
+  });
+
   test.each(["script", "foreignObject", "a", "image", "use", "style"])(
     "элемент %s — исключение",
     (name) => {

@@ -79,8 +79,8 @@ describe("flowchart", () => {
         },
         {
           points: [
-            { x: 20, y: 10 },
-            { x: 20, y: 20 },
+            { x: 20, y: 15 },
+            { x: 20, y: 25 },
           ],
           arrows: [],
         },
@@ -92,6 +92,7 @@ describe("flowchart", () => {
       '<path d="M 20 20 L 16.37 20 M 10 20 L 10 16.37 M 10 10 L 20 10" stroke-linecap="butt">',
     );
     expect(svg).toContain('<path d="M 30 15 L 26.37 15" stroke-linecap="butt">');
+    expect(svg).toContain('<path d="M 20 15 L 20 25" stroke-linecap="butt">');
 
     const arrows = Array.from(
       svg.matchAll(/<polygon points="([^"]+)" fill="#000" stroke-miterlimit="10">/g),

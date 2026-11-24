@@ -16,7 +16,8 @@ const textInk = "#222";
 const labelInk = "#444";
 const dash = "2 1";
 
-const points = (list: readonly Point[]) => list.map((p) => `${n(p.x)},${n(p.y)}`).join(" ");
+const pointKey = (point: Point) => `${n(point.x)},${n(point.y)}`;
+const points = (list: readonly Point[]) => list.map(pointKey).join(" ");
 
 function outline(shape: Shape): SvgNode {
   const { x, y, width: w, height: h } = shape;
@@ -79,7 +80,11 @@ function shapeText(shape: Shape, drawing: Drawing): SvgNode[] {
 }
 
 /** Отрезок со стрелкой заканчивается у выреза. На повороте линия продолжает идти от угла. */
-function flowLine(line: FlowLine, strokeWidth: number): SvgNode[] {
+function flowLine(
+  line: FlowLine,
+  strokeWidth: number,
+  arrowEndpoints: ReadonlySet<string>,
+): SvgNode[] {
   const arrowAt = new Set(line.arrows);
   const tipOffset = 1.118 * strokeWidth;
   const arrowLength = 7 * strokeWidth;
@@ -119,13 +124,21 @@ function flowLine(line: FlowLine, strokeWidth: number): SvgNode[] {
       }),
     );
   });
-  const lineCap = arrows.length > 0 ? "butt" : "square";
+  const start = line.points[0];
+  const startsAtArrow = start !== undefined && arrowEndpoints.has(pointKey(start));
+  const lineCap = arrows.length > 0 || startsAtArrow ? "butt" : "square";
   return [el("path", { d: commands.join(" "), "stroke-linecap": lineCap }), ...arrows];
 }
 
 /** SVG чертежа: размеры в мм, `viewBox` в мм — печать в масштабе 100 % даёт те же размеры. */
 export function renderSvg(drawing: Drawing): string {
   const { style } = drawing;
+  const arrowEndpoints = new Set<string>();
+  for (const line of drawing.lines) {
+    const lastIndex = line.points.length - 1;
+    const end = line.points[lastIndex];
+    if (end && line.arrows.includes(lastIndex)) arrowEndpoints.add(pointKey(end));
+  }
   // Знаков, которых нет в шрифте (≤, ⌊), браузер ищет дальше по списку.
   const family = `${style.font.family}, Times New Roman, serif`;
   const text = (nodes: SvgNode[], color = textInk, size = style.size) =>
@@ -147,7 +160,7 @@ export function renderSvg(drawing: Drawing): string {
             stroke: ink,
             "stroke-width": drawing.strokeWidth,
           },
-          drawing.lines.flatMap((line) => flowLine(line, drawing.strokeWidth)),
+          drawing.lines.flatMap((line) => flowLine(line, drawing.strokeWidth, arrowEndpoints)),
         ),
         ...drawing.shapes.map((shape) =>
           el("g", { "data-block-id": shape.id }, [
