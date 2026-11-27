@@ -1,6 +1,6 @@
 # ADR-0010: GitHub Flow, merge commit, Conventional Commits
 
-Статус: принято · 2026-11-17
+Статус: принято · 2026-11-17 · одобрения заменены [ADR-0019](0019-team-process.md)
 
 ## Контекст
 
