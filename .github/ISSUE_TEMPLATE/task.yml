@@ -1,0 +1,35 @@
+name: Задача
+description: Одна задача = одно изменение OpenSpec = один PR
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Как взять задачу и пройти ревью: [CONTRIBUTING.md](https://github.com/Fllunn/writechart/blob/master/CONTRIBUTING.md). Метки поставь вручную.
+  - type: textarea
+    id: what
+    attributes:
+      label: Что сделать
+      description: Коротко, что должно получиться и зачем.
+    validations:
+      required: true
+  - type: checkboxes
+    id: packages
+    attributes:
+      label: Пакеты
+      description: Какие пакеты затронет задача.
+      options:
+        - label: core
+        - label: frontend
+        - label: backend
+        - label: shared
+        - label: e2e
+        - label: ci
+        - label: docs
+  - type: input
+    id: openspec
+    attributes:
+      label: Изменение OpenSpec
+      description: Папка изменения, когда proposal уже есть.
+      placeholder: openspec/changes/<имя>/
+    validations:
+      required: false

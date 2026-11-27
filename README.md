@@ -40,6 +40,6 @@ yarn dev                 # dev-серверы фронта и бэка
 
 ## Как мы работаем
 
-Любая работа начинается с изменения в [OpenSpec](openspec/): сначала proposal, потом код. Git — GitHub Flow: ветка от `master`, PR в `master`, слияние при зелёном CI.
+Любая работа начинается с изменения в [OpenSpec](openspec/): сначала proposal, потом код. Git — GitHub Flow: ветка от `master`, PR в `master`, слияние при зелёном CI и approve от другого члена команды. Задачи — в GitHub Issues и на доске Projects: одна задача = одно изменение OpenSpec = один PR.
 
-Подробнее: [`AGENTS.md`](AGENTS.md), [`docs/architecture.md`](docs/architecture.md), [`docs/adr/`](docs/adr/).
+Как взять задачу, пройти ревью и слить PR: [`CONTRIBUTING.md`](CONTRIBUTING.md). Подробнее: [`AGENTS.md`](AGENTS.md), [`docs/architecture.md`](docs/architecture.md), [`docs/adr/`](docs/adr/).
