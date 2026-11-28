@@ -19,7 +19,22 @@ export const scenarioExamples: Readonly<Record<string, string>> = {
   "floor-division": "d = n // 10\n",
   power: "y = x ** (n + 1)\n",
   "comparison-in-assignment": "flag = a == b\n",
+  "short-text": "x = 1\n",
   "long-text": 'print("Сумма элементов массива, которые делятся на три без остатка:", s)\n',
+  "data-and-long-process":
+    "n = int(input())\ns = 0\nvery_long_total_name = count_value + next_count_value\n",
+  "straight-sequence": "x = 1\ny = very_long_total_name + next_count_value\n",
+  "nested-long-condition":
+    "while a:\n    if b:\n        x = 1\n    else:\n        if average_temperature > maximum_allowed_temperature:\n            x = 2\n",
+  "starter-example": `n = int(input("Введите n: "))
+s = 0
+i = 1
+while i <= n:
+    if i % 2 == 0:
+        s += i
+    i += 1
+print("Сумма чётных:", s)
+`,
   "unsupported-for": "s = 0\nfor i in range(n):\n    print(i)\nprint(s)\n",
   "script-tag": 'print("<script>alert(1)</script>")\n',
   "attribute-escape": 's = "\\"><svg onload=alert(1)>"\n',
